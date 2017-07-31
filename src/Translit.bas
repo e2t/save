@@ -1,0 +1,84 @@
+Attribute VB_Name = "Translit"
+'Written in 2015 by Eduard E. Tikhenko <aquaried@gmail.com>
+'
+'To the extent possible under law, the author(s) have dedicated all copyright
+'and related and neighboring rights to this software to the public domain
+'worldwide. This software is distributed without any warranty.
+'You should have received a copy of the CC0 Public Domain Dedication along
+'with this software.
+'If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
+
+Option Explicit
+
+Function Transliteration(ByVal a As String) As String
+    
+    a = Replace(a, "à", "a")
+    a = Replace(a, "á", "b")
+    a = Replace(a, "â", "v")
+    a = Replace(a, "ã", "g")
+    a = Replace(a, "ä", "d")
+    a = Replace(a, "å", "e")
+    a = Replace(a, "¸", "jo")
+    a = Replace(a, "æ", "zh")
+    a = Replace(a, "ç", "z")
+    a = Replace(a, "è", "i")
+    a = Replace(a, "é?", "j")
+    a = Replace(a, "ê", "k")
+    a = Replace(a, "ë", "l")
+    a = Replace(a, "ì", "m")
+    a = Replace(a, "í", "n")
+    a = Replace(a, "î", "o")
+    a = Replace(a, "ï", "p")
+    a = Replace(a, "ð", "r")
+    a = Replace(a, "ñ", "s")
+    a = Replace(a, "ò", "t")
+    a = Replace(a, "ó", "u")
+    a = Replace(a, "ô", "f")
+    a = Replace(a, "õ", "h")
+    a = Replace(a, "ö", "c")
+    a = Replace(a, "÷", "ch")
+    a = Replace(a, "ø", "sh")
+    a = Replace(a, "ù", "sz")
+    a = Replace(a, "ü", "'")
+    a = Replace(a, "ú", "#")
+    a = Replace(a, "û", "y")
+    a = Replace(a, "ý", "eh")
+    a = Replace(a, "þ", "ju")
+    a = Replace(a, "ÿ", "ja")
+    
+    a = Replace(a, "À", "A")
+    a = Replace(a, "Á", "B")
+    a = Replace(a, "Â", "V")
+    a = Replace(a, "Ã", "G")
+    a = Replace(a, "Ä", "D")
+    a = Replace(a, "Å", "E")
+    a = Replace(a, "¨", "Jo")
+    a = Replace(a, "Æ", "Zh")
+    a = Replace(a, "Ç", "Z")
+    a = Replace(a, "È", "I")
+    a = Replace(a, "É", "J")
+    a = Replace(a, "Ê", "K")
+    a = Replace(a, "Ë", "L")
+    a = Replace(a, "Ì", "M")
+    a = Replace(a, "Í", "N")
+    a = Replace(a, "Î", "O")
+    a = Replace(a, "Ð", "P")
+    a = Replace(a, "Î", "R")
+    a = Replace(a, "Ñ", "S")
+    a = Replace(a, "Ò", "T")
+    a = Replace(a, "Ó", "U")
+    a = Replace(a, "Ô", "F")
+    a = Replace(a, "Õ", "H")
+    a = Replace(a, "Ö", "C")
+    a = Replace(a, "×", "Ch")
+    a = Replace(a, "Ø", "Sh")
+    a = Replace(a, "Ù", "Sz")
+    a = Replace(a, "Ü", "'")
+    a = Replace(a, "Ú", "#")
+    a = Replace(a, "Û", "Y")
+    a = Replace(a, "Ý", "Eh")
+    a = Replace(a, "Þ", "Ju")
+    a = Replace(a, "ß", "Ja")
+    
+    Transliteration = a
+End Function

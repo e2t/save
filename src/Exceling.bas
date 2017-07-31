@@ -1,0 +1,217 @@
+Attribute VB_Name = "Exceling"
+'Written in 2015-2017 by Eduard E. Tikhenko <aquaried@gmail.com>
+'
+'To the extent possible under law, the author(s) have dedicated all copyright
+'and related and neighboring rights to this software to the public domain
+'worldwide. This software is distributed without any warranty.
+'You should have received a copy of the CC0 Public Domain Dedication along
+'with this software.
+'If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
+
+Option Explicit
+
+Private Const xlsColumnDesignation As Integer = 1
+Private Const xlsColumnNaming As Integer = 5
+
+Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
+
+    Dim swFeat As Feature
+    Dim swBomFeat As BomFeature
+    
+    Set swFeat = doc.FirstFeature
+    Set GetBOM = Nothing
+    Do While Not swFeat Is Nothing
+        If "BomFeat" = swFeat.GetTypeName Then
+            Set swBomFeat = swFeat.GetSpecificFeature2
+            Set GetBOM = swBomFeat.GetTableAnnotations(0) 'get first BOM in order
+            Exit Do
+        End If
+        Set swFeat = swFeat.GetNextFeature
+    Loop
+    
+End Function
+
+Function GetColumnOf(colname As String, ByRef table As TableAnnotation) As Integer
+    Dim i As Integer
+    
+    GetColumnOf = -1
+    For i = 0 To table.ColumnCount - 1
+        If table.DisplayedText(0, i) Like ("*" & AnyCase(colname) & "*") Then
+            GetColumnOf = i
+            Exit Function
+        End If
+    Next
+    MsgBox "Не найден столбец """ & colname & """"
+End Function
+
+Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotation) As String
+    Dim text As String
+    
+    text = table.DisplayedText(row, col)
+    If text Like "<*>*" Then
+        Dim ary() As String
+        ary = Split(text, ">")
+        text = ary(UBound(ary))
+    End If
+    text = Replace(text, vbCrLf, " ")
+    GetCellText = text
+End Function
+
+Sub RewriteColumn(colExcel As Integer, colBOM As Integer, ByRef table As TableAnnotation, sheet As Excel.Worksheet)
+    Dim row As Integer
+    Dim text
+    
+    For row = 0 To table.RowCount - 1
+        sheet.Cells(row + 1, colExcel).value = GetCellText(row, colBOM, table)
+    Next
+End Sub
+
+Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
+    Dim colsign As Integer
+    Dim colname As Integer
+    Dim i As Integer
+    
+    sheet.Rows(1).NumberFormat = "@"
+    
+    colsign = GetColumnOf("Обозначение", table)
+    If colsign < 0 Then Exit Sub
+    RewriteColumn xlsColumnDesignation, colsign, table, sheet
+    
+    ' Configurations are placed after Name always
+    colname = GetColumnOf("Наименование", table)
+    If colname < 0 Then Exit Sub
+    For i = colname To table.ColumnCount - 1
+        RewriteColumn xlsColumnNaming - colname + i, i, table, sheet
+    Next
+
+    FormatXLS sheet
+End Sub
+
+Sub FormatXLS(sheet As Excel.Worksheet)
+    Dim i As Integer
+    
+    For i = 6 To sheet.UsedRange.Columns.Count - 1
+        If Not IsError(sheet.Cells(1, i)) Then
+            If Len(sheet.Cells(1, i)) = 1 Then
+                If sheet.Cells(1, i) = " " Then
+                    sheet.Cells(1, i).value = "00"
+                Else
+                    sheet.Cells(1, i).value = "0" + sheet.Cells(1, i).text
+                End If
+            End If
+        End If
+    Next
+    sheet.name = "List-0"  'constant, agreed with Ivanyna
+    
+    Dim titles(7) As String
+    titles(0) = "*" + AnyCase("документация")
+    titles(1) = "*" + AnyCase("комплек") + "[сСтТ]" + AnyCase("ы")
+    titles(2) = "*" + AnyCase("сборочные единицы")
+    titles(3) = "*" + AnyCase("детали")
+    titles(4) = "*" + AnyCase("стандартные изделия")
+    titles(5) = "*" + AnyCase("проч") + "[иИеЕ]" + AnyCase("е") + "*"
+    titles(6) = "*" + AnyCase("материалы")
+    titles(7) = "*" + AnyCase("покупные") + "*"
+    
+    sheet.Rows(1).Font.Bold = True
+    
+    Dim designation As Excel.Range
+    For i = 1 To sheet.UsedRange.Columns.Count
+        Set designation = sheet.Cells(1, i)
+        designation.value = Capitalize(designation.text)
+    Next
+    For i = 1 To sheet.UsedRange.Rows.Count
+        Set designation = sheet.Cells(i, xlsColumnNaming)
+        Dim word As Variant
+        For Each word In titles
+            If designation Like word Then
+                designation.Font.Bold = True
+                designation.Font.size = 16
+                designation.value = Capitalize(designation.text)
+                Exit For
+            End If
+        Next
+    Next
+    
+    sheet.Columns(xlsColumnDesignation).AutoFit
+    sheet.Columns(xlsColumnNaming).AutoFit
+End Sub
+
+Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
+    Dim xlsfile As String
+    Dim xlApp As Excel.Application
+    Dim ExcelBOM As Excel.Workbook
+
+    If Not swTable Is Nothing Then
+        xlsfile = fullFileNameNoExt + ".xls"
+        If Not RemoveOldFile(xlsfile) Then
+            MsgBox "Не удается удалить файл """ & xlsfile & """", vbCritical
+            Exit Sub
+        End If
+        
+        'add columns
+        Dim countNewColumns As Integer
+        countNewColumns = AddColumnToBOM(swTable, "Заготовка") + _
+                          AddColumnToBOM(swTable, "Материал") + _
+                          AddColumnToBOM(swTable, "Типоразмер") + _
+                          AddColumnToBOM(swTable, "Длина") + _
+                          AddColumnToBOM(swTable, "Ширина")
+                          
+        'Open Excel
+        Set xlApp = New Excel.Application
+        Set ExcelBOM = xlApp.Workbooks.Add
+        ImportBOMtoXLS swTable, ExcelBOM.Worksheets(1)
+        
+        'remove columns
+        Dim i As Integer
+        If countNewColumns > 0 Then
+            For i = 1 To countNewColumns
+                swTable.DeleteColumn swTable.ColumnCount - 1
+            Next
+        End If
+        
+        'Close Excel
+        ExcelBOM.SaveAs xlsfile, 39, , , , , , 2
+        ExcelBOM.Close
+        xlApp.Quit
+        Set ExcelBOM = Nothing
+        Set xlApp = Nothing
+    End If
+End Sub
+
+Private Function AnyCase(text As String) As String
+
+    Dim i As Integer, length As Integer, char As String
+    AnyCase = ""
+    length = Len(text)
+    If length > 0 Then
+        For i = 1 To length
+            char = Mid(text, i, 1)
+            AnyCase = AnyCase + "[" + LCase(char) + UCase(char) + "]"
+        Next
+    End If
+    
+End Function
+
+Private Function Capitalize(text As String) As String
+
+    Dim length As Integer
+    Capitalize = ""
+    length = Len(text)
+    If length > 0 Then
+        Capitalize = UCase(Left(text, 1)) + LCase(Mid(text, 2, Len(text) - 1))
+    End If
+    
+End Function
+
+Private Function AddColumnToBOM(ByRef swTable As TableAnnotation, Prop As String) As Integer
+
+    AddColumnToBOM = 0
+    Dim swBom As BomTableAnnotation
+    Set swBom = swTable
+    If swTable.InsertColumn2(swTableItemInsertPosition_Last, 0, Prop, swInsertColumn_DefaultWidth) Then
+        swBom.SetColumnCustomProperty swTable.ColumnCount - 1, Prop
+        AddColumnToBOM = 1
+    End If
+    
+End Function
