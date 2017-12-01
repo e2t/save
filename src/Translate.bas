@@ -150,7 +150,7 @@ End_GetFromWebpage:
     Exit Function
 
 Err_GetFromWebpage:
-    MsgBox Err.Description & " (" & Err.number & ")"
+    MsgBox err.Description & " (" & err.number & ")"
     abort = True
     Resume End_GetFromWebpage
 End Function

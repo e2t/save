@@ -14,6 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+
 'Written in 2015-2016 by Eduard E. Tikhenko <aquaried@gmail.com>
 '
 'To the extent possible under law, the author(s) have dedicated all copyright
@@ -25,10 +26,28 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+Public Function IsForAll() As Boolean
+    IsForAll = allBox.value Or allInFolderBox.value
+End Function
+
 Private Sub allBox_Click()
-
+    If allBox.value Then
+        allInFolderBox.value = False
+        allInFolderBox.Enabled = False
+    Else
+        allInFolderBox.Enabled = True
+    End If
     ChangeCaptions
+End Sub
 
+Private Sub allInFolderBox_Click()
+    If allInFolderBox.value Then
+        allBox.value = False
+        allBox.Enabled = False
+    Else
+        allBox.Enabled = True
+    End If
+    ChangeCaptions
 End Sub
 
 Private Sub attachBox_Click()
@@ -36,7 +55,6 @@ Private Sub attachBox_Click()
 End Sub
 
 Private Sub breakBox_Click()
-
     If breakBox.value Then
         incBox.value = False
         incBox.Enabled = False
@@ -44,13 +62,10 @@ Private Sub breakBox_Click()
         incBox.Enabled = True
     End If
     ChangeCaptions  'strong after changing the checkbox values
-
 End Sub
 
 Private Sub cancelBut_Click()
-
     Unload Me
-    
 End Sub
 
 Private Sub changeBox_Change()
@@ -102,9 +117,16 @@ Private Sub radExportNone_Click()
 End Sub
 
 Private Sub saveBut_Click()
-
-    ConvertDocs allBox.value
-
+    Dim aForAllMode As ForAllMode
+    
+    If allBox.value Then
+        aForAllMode = forAllOpened
+    ElseIf allInFolderBox.value Then
+        aForAllMode = forAllInFolder
+    Else
+        aForAllMode = forActive
+    End If
+    ConvertDocs aForAllMode
 End Sub
 
 Private Sub pdfBox_Click()

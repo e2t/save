@@ -78,7 +78,7 @@ Sub SetIncBoxCaption(mode As IncBoxMode)
     Dim text As String
     Dim number As Integer
     
-    text = IIf(MyForm.allBox.value, "Измененные чертежи", "Измененный чертеж")
+    text = IIf(MyForm.IsForAll, "Измененные чертежи", "Измененный чертеж")
     Select Case mode
         Case ShowThisNumber
             text = text & FormatNumberOfChanging(GetNumberChangingOfThisDoc)
@@ -132,13 +132,13 @@ End Function
 
 Function ChangeCaptions()  'mask for button
     With MyForm
-        .breakBox.Caption = IIf(.allBox.value, "Новые чертежи", "Новый чертеж")
+        .breakBox.Caption = IIf(.IsForAll, "Новые чертежи", "Новый чертеж")
         If .incBox.value Then
-            SetIncBoxCaption IIf(.allBox.value, ShowAdding, ShowNextNumber)
+            SetIncBoxCaption IIf(.IsForAll, ShowAdding, ShowNextNumber)
         ElseIf .breakBox.value Then
             SetIncBoxCaption NonShow
         Else
-            SetIncBoxCaption IIf(.allBox.value, NonShow, ShowThisNumber)
+            SetIncBoxCaption IIf(.IsForAll, NonShow, ShowThisNumber)
         End If
         If Not HaveTRinThisDoc Then
             .chkTranslate.Caption = .chkTranslate.Caption & " (НЕТ)"

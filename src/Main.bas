@@ -13,6 +13,12 @@ Option Explicit
 Public Const macroName As String = "Save3"
 Public Const macroSection As String = "Main"
 
+Enum ForAllMode
+    forActive = 0
+    forAllOpened
+    forAllInFolder
+End Enum
+
 Enum ChangeMode
     modeDefault = 0
     modeDrokin
@@ -76,7 +82,7 @@ Function InitAll()  'mask fot button
 
 End Function
 
-Sub ConvertDocs(forAll As Boolean)
+Sub ConvertDocs(aForAllMode As ForAllMode)
 
     Dim doc_ As Variant
     Dim doc As ModelDoc2
@@ -108,7 +114,8 @@ Sub ConvertDocs(forAll As Boolean)
         Translate = GetNeedTranslate
         preview = GetNeedPreview
         Export3D = GetExportModel
-        If forAll Then
+        
+        If aForAllMode = forAllOpened Then
             For Each doc_ In swApp.GetDocuments
                 Set doc = doc_
                 TryConvertDoc doc, fileExtensions, mode, closeAfter, openAfter, singly, _
@@ -116,6 +123,38 @@ Sub ConvertDocs(forAll As Boolean)
                               Translate, preview, Export3D
                 If abort Then Exit For
             Next
+            
+        ElseIf aForAllMode = forAllInFolder Then
+            Dim file_ As Variant
+            Dim file As Object
+            Dim dirOfActiveDoc As String
+            Dim folder As Object
+            Dim filename As String
+            Dim maybeCloseAfter As Boolean
+            Dim err As swFileLoadError_e
+            Dim wrn As swFileLoadWarning_e
+            
+            Set folder = CreateObject("Scripting.FileSystemObject").GetFolder(GetDirOfActiveDoc)
+            For Each file_ In folder.Files
+                Set file = file_
+                filename = LCase(file.Path)
+                If InStr(filename, "slddrw") > 0 And InStr(filename, "~$") = 0 Then
+                    Set doc = swApp.OpenDoc6(filename, swDocDRAWING, swOpenDocOptions_Silent, "", err, wrn)
+                    If wrn = swFileLoadWarning_AlreadyOpen Then
+                        maybeCloseAfter = closeAfter
+                    Else
+                        maybeCloseAfter = True
+                    End If
+                    
+                    ''' job
+                    TryConvertDoc doc, fileExtensions, mode, maybeCloseAfter, openAfter, singly, _
+                              incChanging, breakChanging, abort, attachStep, xlsNeed, _
+                              Translate, preview, Export3D
+                    If abort Then Exit For
+                    ''' end job
+                End If
+            Next
+            
         Else
             TryConvertDoc swApp.ActiveDoc, fileExtensions, mode, closeAfter, openAfter, singly, _
                           incChanging, breakChanging, abort, attachStep, xlsNeed, Translate, _

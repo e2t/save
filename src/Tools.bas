@@ -198,7 +198,7 @@ Function IsArrayEmpty(anArray As Variant) As Boolean
     
     On Error Resume Next
         i = UBound(anArray, 1)
-    If Err.number = 0 Then
+    If err.number = 0 Then
         IsArrayEmpty = False
     Else
         IsArrayEmpty = True
@@ -330,4 +330,14 @@ Function RemoveOldFile(filename As String) As Boolean
     Exit Function
 ErrorKill:
     RemoveOldFile = False
+End Function
+
+Function GetDirOfActiveDoc() As String
+    Dim doc As ModelDoc2
+    
+    Set doc = swApp.ActiveDoc
+    If Not doc Is Nothing Then
+        Dim fso As New FileSystemObject
+        GetDirOfActiveDoc = fso.GetParentFolderName(doc.GetPathName) + "\"
+    End If
 End Function
