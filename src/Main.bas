@@ -46,6 +46,7 @@ Enum LanguageMode
 End Enum
 Public TRname(1) As String
 
+Public Const maxPathLength As Integer = 255
 Public swApp As Object
 Public namesChangeMode(modeAsIs) As String
 Public namesXlsNeedMode(xlsNoNeed) As String

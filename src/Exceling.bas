@@ -138,14 +138,23 @@ Sub FormatXLS(sheet As Excel.Worksheet)
 End Sub
 
 Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
+    Const warning As String = "Спецификация не будет создана."
     Dim xlsfile As String
     Dim xlApp As Excel.Application
     Dim ExcelBOM As Excel.Workbook
+    Dim countFilenameChars As Integer
 
     If Not swTable Is Nothing Then
         xlsfile = fullFileNameNoExt + ".xls"
+        countFilenameChars = Len(xlsfile)
+        If countFilenameChars > maxPathLength Then
+            MsgBox "Слишком длинное имя файла:" & vbNewLine & xlsfile & vbNewLine & _
+                   str(countFilenameChars) & " > " & str(maxPathLength) & vbNewLine & _
+                   warning, vbCritical
+        End If
         If Not RemoveOldFile(xlsfile) Then
-            MsgBox "Не удается удалить файл """ & xlsfile & """", vbCritical
+            MsgBox "Не удается удалить файл:" & vbNewLine & xlsfile & vbNewLine & _
+                   warning, vbCritical
             Exit Sub
         End If
         
