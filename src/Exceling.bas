@@ -148,12 +148,13 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
         xlsfile = fullFileNameNoExt + ".xls"
         countFilenameChars = Len(xlsfile)
         If countFilenameChars > maxPathLength Then
-            MsgBox "Слишком длинное имя файла:" & vbNewLine & xlsfile & vbNewLine & _
-                   str(countFilenameChars) & " > " & str(maxPathLength) & vbNewLine & _
+            MsgBox "Слишком длинное имя файла (" & str(countFilenameChars) & " > " & str(maxPathLength) & "):" & vbNewLine & _
+                   xlsfile & vbNewLine & _
                    warning, vbCritical
         End If
         If Not RemoveOldFile(xlsfile) Then
-            MsgBox "Не удается удалить файл:" & vbNewLine & xlsfile & vbNewLine & _
+            MsgBox "Не удается удалить старый файл:" & vbNewLine & _
+                   xlsfile & vbNewLine & _
                    warning, vbCritical
             Exit Sub
         End If
