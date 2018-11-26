@@ -13,8 +13,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
 'Written in 2015-2016 by Eduard E. Tikhenko <aquaried@gmail.com>
 '
 'To the extent possible under law, the author(s) have dedicated all copyright
@@ -70,6 +68,8 @@ End Sub
 
 Private Sub changeBox_Change()
     SaveIntSetting "changemode", changeBox.ListIndex
+    useEngNames = GetEngViews
+    ChangeCaptions  'strong after changing the checkbox values
 End Sub
 
 Private Sub chkPreview_Click()
@@ -81,13 +81,10 @@ Private Sub chkTranslate_Click()
 End Sub
 
 Private Sub closeBox_Click()
-
     SaveBoolSetting "close", closeBox.value
-
 End Sub
 
 Private Sub incBox_Click()
-
     If incBox.value Then
         breakBox.value = False
         breakBox.Enabled = False
@@ -95,13 +92,10 @@ Private Sub incBox_Click()
         breakBox.Enabled = True
     End If
     ChangeCaptions  'strong after changing the checkbox values
-
 End Sub
 
 Private Sub openBox_Click()
-
     SaveBoolSetting "open", openBox.value
-
 End Sub
 
 Private Sub radExportCurrent_Click()
@@ -130,51 +124,35 @@ Private Sub saveBut_Click()
 End Sub
 
 Private Sub pdfBox_Click()
-
     SaveBoolSetting "pdf", pdfBox.value
-
 End Sub
 
 Private Sub dwgBox_Click()
-
     SaveBoolSetting "dwg", dwgBox.value
-
 End Sub
 
 Private Sub dxfBox_Click()
-
     SaveBoolSetting "dxf", dxfBox.value
-
 End Sub
 
 Private Sub scaleBox_Click()
-
     swApp.SetUserPreferenceIntegerValue swDxfOutputNoScale, scaleBox.value
-
 End Sub
 
 Private Sub singlyBox_Click()
-
     SaveBoolSetting "singly", singlyBox.value
-
 End Sub
 
 Private Sub tifBox_Click()
-
     SaveBoolSetting "tif", tifBox.value
-
 End Sub
 
 Private Sub psdBox_Click()
-
     SaveBoolSetting "psd", psdBox.value
-
 End Sub
 
 Private Sub UserForm_Initialize()
-
     InitSettings
-
 End Sub
 
 Private Sub xlsNeedBox_Change()

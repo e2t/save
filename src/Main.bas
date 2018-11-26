@@ -24,6 +24,7 @@ Enum ChangeMode
     modeDrokin
     modeEkoton
     modePoland
+    modeANSI
     modeAsIs  'must be last always
 End Enum
 
@@ -50,14 +51,13 @@ Public Const maxPathLength As Integer = 255
 Public swApp As Object
 Public namesChangeMode(modeAsIs) As String
 Public namesXlsNeedMode(xlsNoNeed) As String
+Public useEngNames As Boolean
 Private Const pChanging As String = "Изменение"
 
 Sub Main()
-
     Set swApp = Application.SldWorks
     InitAll
     MyForm.Show
-    
 End Sub
 
 Function InitAll()  'mask fot button
@@ -66,6 +66,7 @@ Function InitAll()  'mask fot button
     namesChangeMode(modeDrokin) = "Для ИП ""Дрокин"""
     namesChangeMode(modeEkoton) = "Для НПФ ""Экотон"""
     namesChangeMode(modePoland) = "Для Польши"
+    namesChangeMode(modeANSI) = "На английском"
     namesChangeMode(modeAsIs) = "Как изображено"
     
     namesXlsNeedMode(xlsNeedForAll) = "Для всех чертежей"
@@ -100,6 +101,7 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
     Dim Translate As Boolean
     Dim preview As Boolean
     Dim Export3D As ExportMode
+    Dim oldUseEnglishLang As Boolean
 
     If HaveOpenedDocs(swApp) Then
         fileExtensions = GetFileExtensions
@@ -115,6 +117,12 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
         Translate = GetNeedTranslate
         preview = GetNeedPreview
         Export3D = GetExportModel
+        useEngNames = GetEngViews
+        
+        If useEngNames Then
+            oldUseEnglishLang = swApp.GetUserPreferenceToggle(swUseEnglishLanguageFeatureNames)
+            swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, True
+        End If
         
         If aForAllMode = forAllOpened Then
             For Each doc_ In swApp.GetDocuments
@@ -161,6 +169,10 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
                           incChanging, breakChanging, abort, attachStep, xlsNeed, Translate, _
                           preview, Export3D
         End If
+        
+        If useEngNames Then
+            swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, oldUseEnglishLang
+        End If
         Unload MyForm
     Else
         MsgBox "Не открытых документов.", vbCritical
@@ -191,24 +203,34 @@ Sub TryConvertDoc(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode
     If Not IsDrawing(doc) Or doc.GetPathName = "" Then Exit Sub
     ActivateDoc doc  'only the active doc converting to dxf/dwg
     ChangeNumberOfChanging doc, incChanging, breakChanging
+    
+    'if need to translate views
+    If useEngNames Then
+        RenameDrawingViewsAndSheets doc
+    End If
+    
     'if need then translate
     If Translate Then
         TryConvertDoc2 doc, fileExtensions, mode, openAfter, singly, _
                        abort, attachStep, True, preview
     End If
+    
     'russian always
     If Not abort Then
         TryConvertDoc2 doc, fileExtensions, mode, openAfter, singly, _
                        abort, attachStep, False, preview
     End If
+    
     'model copying
     If Not abort And Export3D <> exportNone Then
         ExportModel doc, abort, Export3D
     End If
+    
     'xls-specification
     If Not abort And IsNeedXLS(doc, xlsNeed) Then
         SaveBOMtoXLS GetBOM(doc), GetDrawingNameWOext(doc.GetPathName)
     End If
+    
     SaveThisDoc doc
     If Not abort And closeAfter Then
         swApp.CloseDoc doc.GetPathName
@@ -283,7 +305,8 @@ Function IsNeedXLS(drawing As DrawingDoc, xlsNeed As XlsNeedMode) As Boolean
         IsNeedXLS = False
     Else
         GetDrawingProperty miniSign, drawing, "Пометка"
-        If miniSign <> "СБ" And miniSign <> "МЧ" Then
+        If miniSign <> "СБ" And miniSign <> "AD" And _
+           miniSign <> "МЧ" And miniSign <> "ID" Then
             IsNeedXLS = False
         ElseIf xlsNeed = xlsNeedForNew Then
             IsNeedXLS = (GetNumberChanging(drawing) = 0)
@@ -353,7 +376,7 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
     Dim sheetname As String
     Dim aSheet As sheet
     Dim aView_ As Variant
-    Dim aview As View
+    Dim aView As View
     Dim confs As Dictionary
     Dim pair_ As Variant
     Dim pair As PairModelConf
@@ -366,13 +389,13 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
         sheetname = sheetname_
         Set aSheet = drawing.sheet(sheetname)
         For Each aView_ In aSheet.GetViews
-            Set aview = aView_
-            If Not aview.ReferencedDocument Is Nothing Then  'OPTIMIZE: просматриваются лишние виды
-                key = aview.GetReferencedModelName & "::" & aview.ReferencedConfiguration
+            Set aView = aView_
+            If Not aView.ReferencedDocument Is Nothing Then  'OPTIMIZE: просматриваются лишние виды
+                key = aView.GetReferencedModelName & "::" & aView.ReferencedConfiguration
                 If Not confs.Exists(key) Then
                     Set pair = New PairModelConf
-                    pair.conf = aview.ReferencedConfiguration
-                    Set pair.model = aview.ReferencedDocument
+                    pair.conf = aView.ReferencedConfiguration
+                    Set pair.model = aView.ReferencedDocument
                     confs.Add key, pair
                 End If
             End If
@@ -404,9 +427,14 @@ Function GetDrawingNameWOext(ByRef drawingName As String) As String
 End Function
 
 Function FormatNumberOfChanging(number As Integer) As String
-
-    FormatNumberOfChanging = IIf(number > 0, " (изм." & Format(number, "00") & ")", "")
-
+    Dim revLabel As String
+    revLabel = IIf(useEngNames, "rev", "изм")
+    
+    If number > 0 Then
+        FormatNumberOfChanging = " (" & revLabel & "." & Format(number, "00") & ")"
+    Else
+        FormatNumberOfChanging = ""
+    End If
 End Function
 
 Function NewFilename(ByRef drawing As DrawingDoc, ByRef fileExtension As String, Translate As Boolean) As String
@@ -420,13 +448,11 @@ Function NewFilename(ByRef drawing As DrawingDoc, ByRef fileExtension As String,
                   FormatNumberOfChanging(number) & _
                   IIf(Translate, " - POLAND", "") & _
                   "." & fileExtension
-
 End Function
 
 Function GetNumberChanging(ByRef drawing As DrawingDoc) As Integer
-
     Dim str As String
-
+    
     GetNumberChanging = 0
     GetDrawingProperty str, drawing, pChanging
     If IsNumeric(str) Then
@@ -438,4 +464,46 @@ Function GetNumberChanging(ByRef drawing As DrawingDoc) As Integer
 
 End Function
 
+Sub RenameDrawingViewsAndSheets(drawing As DrawingDoc)
+    Dim arraySheets As Variant
+    arraySheets = drawing.GetViews
+    Dim ss
+    For Each ss In arraySheets
+        Dim vv
+        For Each vv In ss
+            Dim aView As View
+            Set aView = vv
+            TranslateView aView
+        Next
+    Next
+End Sub
 
+Sub TranslateView(aView As View)
+    Dim viewName As String
+    viewName = aView.GetName2
+    
+    'Местные виды и разрезы переименовать нельзя.
+    'Они меняют название в зависимости от настроек SolidWorks.
+    
+    Dim search_words(1) As String
+    search_words(0) = "лист"
+    search_words(1) = "чертежный вид"
+    
+    Dim eng_words(1) As String
+    eng_words(0) = "Sheet"
+    eng_words(1) = "Drawing View"
+    
+    Dim regex As RegExp
+    Set regex = New RegExp
+    regex.IgnoreCase = True
+    
+    Dim i As Integer
+    For i = LBound(search_words) To UBound(search_words)
+        regex.Pattern = search_words(i)
+        If regex.Test(viewName) Then
+            Dim newViewName As String
+            newViewName = regex.Replace(viewName, eng_words(i)) & " "
+            aView.SetName2 newViewName
+        End If
+    Next
+End Sub

@@ -31,12 +31,13 @@ Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
     
 End Function
 
-Function GetColumnOf(colname As String, ByRef table As TableAnnotation) As Integer
+Function GetColumnOf(colname As String, engName As String, ByRef table As TableAnnotation) As Integer
     Dim i As Integer
     
     GetColumnOf = -1
     For i = 0 To table.ColumnCount - 1
-        If table.DisplayedText(0, i) Like ("*" & AnyCase(colname) & "*") Then
+        If table.DisplayedText(0, i) Like ("*" & AnyCase(colname) & "*") Or _
+           table.DisplayedText(0, i) Like ("*" & AnyCase(engName) & "*") Then
             GetColumnOf = i
             Exit Function
         End If
@@ -73,12 +74,13 @@ Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
     
     sheet.Rows(1).NumberFormat = "@"
     
-    colsign = GetColumnOf("Обозначение", table)
+    colsign = GetColumnOf("Обозначение", "Designation", table)
     If colsign < 0 Then Exit Sub
+    
     RewriteColumn xlsColumnDesignation, colsign, table, sheet
     
     ' Configurations are placed after Name always
-    colname = GetColumnOf("Наименование", table)
+    colname = GetColumnOf("Наименование", "Name", table)
     If colname < 0 Then Exit Sub
     For i = colname To table.ColumnCount - 1
         RewriteColumn xlsColumnNaming - colname + i, i, table, sheet
@@ -103,7 +105,7 @@ Sub FormatXLS(sheet As Excel.Worksheet)
     Next
     sheet.name = "List-0"  'constant, agreed with Ivanyna
     
-    Dim titles(7) As String
+    Dim titles(13) As String
     titles(0) = "*" + AnyCase("документация")
     titles(1) = "*" + AnyCase("комплек") + "[сСтТ]" + AnyCase("ы")
     titles(2) = "*" + AnyCase("сборочные единицы")
@@ -112,6 +114,12 @@ Sub FormatXLS(sheet As Excel.Worksheet)
     titles(5) = "*" + AnyCase("проч") + "[иИеЕ]" + AnyCase("е") + "*"
     titles(6) = "*" + AnyCase("материалы")
     titles(7) = "*" + AnyCase("покупные") + "*"
+    titles(8) = "*" + AnyCase("assembly units")
+    titles(9) = "*" + AnyCase("details")
+    titles(10) = "*" + AnyCase("standard products")
+    titles(11) = "*" + AnyCase("third party products")
+    titles(12) = "*" + AnyCase("materials")
+    titles(13) = "*" + AnyCase("other")
     
     sheet.Rows(1).Font.Bold = True
     

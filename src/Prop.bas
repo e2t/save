@@ -20,6 +20,7 @@ Function InitializeProperties()  'mask for button
     Dim drokinProperties As Dictionary
     Dim ekotonProperties As Dictionary
     Dim polandProperties As Dictionary
+    Dim ansiProperties As Dictionary
     Const pDevel As String = "Разработал"
     Const pDraft As String = "Начертил"
     Const pCheck As String = "Проверил"
@@ -65,11 +66,19 @@ Function InitializeProperties()  'mask for button
     'changes for Poland
     Set polandProperties = New Dictionary
     polandProperties.Add pFirm, "ООО ""Эко-Инвест"""
+    'changes for ANSI
+    Set ansiProperties = New Dictionary
+    ansiProperties.Add pCheck, "Urikov"
+    ansiProperties.Add pTech, "Gumennyj"
+    ansiProperties.Add pNorm, "Urikov"
+    ansiProperties.Add pAppr, "Gumennyj"
+    ansiProperties.Add pFirm, "Ekoton Industrial Group"
     'all variants of the changes
     Set changesProperties(modeDefault) = defaultProperties
     Set changesProperties(modeDrokin) = drokinProperties
     Set changesProperties(modeEkoton) = ekotonProperties
     Set changesProperties(modePoland) = polandProperties
+    Set changesProperties(modeANSI) = ansiProperties
 
 End Function
 

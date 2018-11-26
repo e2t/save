@@ -65,12 +65,12 @@ Sub RestoreOldTR(tr As Note, oldText As String)
 End Sub
 
 Function FindExistingTR(drawing As DrawingDoc, notename As String) As Note
-    Dim aview As View
+    Dim aView As View
     Dim anote As Note
     
-    Set aview = drawing.GetFirstView
+    Set aView = drawing.GetFirstView
     Do
-        Set anote = aview.GetFirstNote
+        Set anote = aView.GetFirstNote
         While Not anote Is Nothing
             If anote.GetName = notename Then
                 Set FindExistingTR = anote
@@ -78,8 +78,8 @@ Function FindExistingTR(drawing As DrawingDoc, notename As String) As Note
             End If
             Set anote = anote.GetNext
         Wend
-        Set aview = aview.GetNextView
-    Loop While Not aview Is Nothing
+        Set aView = aView.GetNextView
+    Loop While Not aView Is Nothing
 End Function
 
 Function TranslateText(lines As Variant, languagePair As String, ByRef abort As Boolean) As Variant

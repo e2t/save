@@ -194,3 +194,7 @@ Function GetExportModel() As ExportMode
         GetExportModel = exportNone
     End If
 End Function
+
+Function GetEngViews() As Boolean
+    GetEngViews = (MyForm.changeBox.ListIndex = modeANSI)
+End Function
