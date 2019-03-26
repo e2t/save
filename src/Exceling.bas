@@ -31,18 +31,22 @@ Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
     
 End Function
 
-Function GetColumnOf(colname As String, engName As String, ByRef table As TableAnnotation) As Integer
+Function GetColumnOf(colnames() As String, ByRef table As TableAnnotation) As Integer
     Dim i As Integer
     
     GetColumnOf = -1
     For i = 0 To table.ColumnCount - 1
-        If table.DisplayedText(0, i) Like ("*" & AnyCase(colname) & "*") Or _
-           table.DisplayedText(0, i) Like ("*" & AnyCase(engName) & "*") Then
-            GetColumnOf = i
-            Exit Function
-        End If
+        Dim j
+        For Each j In colnames
+            Dim colname As String
+            colname = j
+            If table.DisplayedText(0, i) Like ("*" & AnyCase(colname) & "*") Then
+                GetColumnOf = i
+                Exit Function
+            End If
+        Next
     Next
-    MsgBox "Не найден столбец """ & colname & """"
+    MsgBox "Не найден столбец """ & colnames(0) & """"
 End Function
 
 Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotation) As String
@@ -72,15 +76,22 @@ Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
     Dim colname As Integer
     Dim i As Integer
     
-    sheet.Rows(1).NumberFormat = "@"
+    sheet.Cells.NumberFormat = "@"
     
-    colsign = GetColumnOf("Обозначение", "Designation", table)
+    Dim aDesignation(2) As String
+    aDesignation(0) = "Обозначение"
+    aDesignation(1) = "Designation"
+    aDesignation(2) = "Item"
+    colsign = GetColumnOf(aDesignation, table)
     If colsign < 0 Then Exit Sub
     
     RewriteColumn xlsColumnDesignation, colsign, table, sheet
     
     ' Configurations are placed after Name always
-    colname = GetColumnOf("Наименование", "Name", table)
+    Dim aName(1) As String
+    aName(0) = "Наименование"
+    aName(1) = "Name"
+    colname = GetColumnOf(aName, table)
     If colname < 0 Then Exit Sub
     For i = colname To table.ColumnCount - 1
         RewriteColumn xlsColumnNaming - colname + i, i, table, sheet
