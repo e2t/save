@@ -67,7 +67,17 @@ Sub RewriteColumn(colExcel As Integer, colBOM As Integer, ByRef table As TableAn
     Dim text
     
     For row = 0 To table.RowCount - 1
-        sheet.Cells(row + 1, colExcel).value = GetCellText(row, colBOM, table)
+        'sheet.Cells(row + 1, colExcel).value = GetCellText(row, colBOM, table)
+        Dim x() As Byte
+        x = StrConv(GetCellText(row, colBOM, table), vbFromUnicode)
+        Dim i As Variant
+        For Each i In x
+            If i < 256 Then
+                sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + Chr(i)
+            Else
+                sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + ChrW(i)
+            End If
+        Next
     Next
 End Sub
 
