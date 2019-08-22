@@ -56,11 +56,11 @@ Function InitializeProperties()  'mask for button
     drokinProperties.Add pFirm, "ИП ""Дрокин"""
     'changes for Ekoton
     Set ekotonProperties = New Dictionary
-    ekotonProperties.Add pDevel, "Вершинина"
+    ekotonProperties.Add pDevel, "Холодов"
     ekotonProperties.Add pDraft, "Холодов"
-    ekotonProperties.Add pCheck, ""
-    ekotonProperties.Add pTech, ""
-    ekotonProperties.Add pNorm, ""
+    ekotonProperties.Add pCheck, "Вершинина"
+    ekotonProperties.Add pTech, "Вершинина"
+    ekotonProperties.Add pNorm, "Вершинина"
     ekotonProperties.Add pAppr, "Ватта"
     ekotonProperties.Add pFirm, "ЗАО НПФ ""Экотон"""
     'changes for Poland
