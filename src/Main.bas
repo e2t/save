@@ -19,15 +19,6 @@ Enum ForAllMode
     forAllInFolder
 End Enum
 
-Enum ChangeMode
-    modeDefault = 0
-    modeDrokin
-    modeEkoton
-    modePoland
-    modeANSI
-    modeAsIs  'must be last always
-End Enum
-
 Enum XlsNeedMode
     xlsNeedForAll = 0
     xlsNeedForNew
@@ -49,10 +40,10 @@ Public TRname(1) As String
 
 Public Const maxPathLength As Integer = 255
 Public swApp As Object
-Public namesChangeMode(modeAsIs) As String
 Public namesXlsNeedMode(xlsNoNeed) As String
-Public useEngNames As Boolean
+Private useEngNames As Boolean
 Private Const pChanging As String = "Изменение"
+Public gFSO As FileSystemObject
 
 Sub Main()
     Set swApp = Application.SldWorks
@@ -62,13 +53,8 @@ End Sub
 
 Function InitAll()  'mask fot button
 
-    namesChangeMode(modeDefault) = "По умолчанию"
-    namesChangeMode(modeDrokin) = "Для ИП ""Дрокин"""
-    namesChangeMode(modeEkoton) = "Для НПФ ""Экотон"""
-    namesChangeMode(modePoland) = "Для Польши"
-    namesChangeMode(modeANSI) = "На английском"
-    namesChangeMode(modeAsIs) = "Как изображено"
-    
+    configFullFileName = swApp.GetCurrentMacroPathFolder + "\Modes.ini"
+
     namesXlsNeedMode(xlsNeedForAll) = "Для всех чертежей"
     namesXlsNeedMode(xlsNeedForNew) = "Только для новых"
     namesXlsNeedMode(xlsNoNeed) = "Не создавать"
@@ -80,6 +66,8 @@ Function InitAll()  'mask fot button
     namesExportMode(exportCurrent) = "Одну конфигурацию"
     namesExportMode(exportLiked) = "С похожим обозначением"
     
+    Set gFSO = New FileSystemObject
+    
     InitializeProperties
 
 End Function
@@ -89,7 +77,7 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
     Dim doc_ As Variant
     Dim doc As ModelDoc2
     Dim fileExtensions() As String
-    Dim mode As ChangeMode
+    Dim mode As String
     Dim closeAfter As Boolean
     Dim openAfter As Boolean
     Dim singly As Boolean
@@ -117,7 +105,7 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
         Translate = GetNeedTranslate
         preview = GetNeedPreview
         Export3D = GetExportModel
-        useEngNames = GetEngViews
+        useEngNames = GetEngViews(changesProperties(mode))
         
         If useEngNames Then
             oldUseEnglishLang = swApp.GetUserPreferenceToggle(swUseEnglishLanguageFeatureNames)
@@ -143,7 +131,7 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
             Dim err As swFileLoadError_e
             Dim wrn As swFileLoadWarning_e
             
-            Set folder = CreateObject("Scripting.FileSystemObject").GetFolder(GetDirOfActiveDoc)
+            Set folder = gFSO.GetFolder(GetDirOfActiveDoc)
             For Each file_ In folder.Files
                 Set file = file_
                 filename = LCase(file.Path)
@@ -159,6 +147,7 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
                     TryConvertDoc doc, fileExtensions, mode, maybeCloseAfter, openAfter, singly, _
                               incChanging, breakChanging, abort, attachStep, xlsNeed, _
                               Translate, preview, Export3D
+                    Set doc = Nothing
                     If abort Then Exit For
                     ''' end job
                 End If
@@ -194,7 +183,7 @@ Function CloseNonDrawings() 'mask for button   'MAYBE to remove
 
 End Function
 
-Sub TryConvertDoc(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode As ChangeMode, _
+Sub TryConvertDoc(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode As String, _
                   closeAfter As Boolean, openAfter As Boolean, singly As Boolean, _
                   incChanging As Boolean, breakChanging As Boolean, ByRef abort As Boolean, _
                   attachStep As Boolean, xlsNeed As XlsNeedMode, Translate As Boolean, _
@@ -233,11 +222,12 @@ Sub TryConvertDoc(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode
     
     SaveThisDoc doc
     If Not abort And closeAfter Then
-        swApp.CloseDoc doc.GetPathName
+        'swApp.CloseDoc doc.GetPathName
+        swApp.QuitDoc doc.GetPathName
     End If
 End Sub
 
-Sub TryConvertDoc2(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode As ChangeMode, _
+Sub TryConvertDoc2(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode As String, _
                    openAfter As Boolean, singly As Boolean, ByRef abort As Boolean, _
                    attachStep As Boolean, Translate As Boolean, preview As Boolean)
     Dim propMgrs As Dictionary
@@ -355,9 +345,12 @@ Function SaveDrawingAs(ByRef drawing As DrawingDoc, ByRef fileExtension As Strin
             SaveDrawingAs = TrySaveDocAs(drawing, filename, data, abort)
             pdfnames(0) = filename
         End If
+        Set data = Nothing
+        
         If attachStep Then
             AttachModelToPDF drawing, pdfnames(0), abort
         End If
+        ConverToPDF_A pdfnames(0)
         If openAfter Then
             For Each pdfname_ In pdfnames
                 pdfname = pdfname_
@@ -374,7 +367,7 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
     Dim stepName As String
     Dim sheetname_ As Variant
     Dim sheetname As String
-    Dim aSheet As sheet
+    Dim asheet As sheet
     Dim aView_ As Variant
     Dim aView As View
     Dim confs As Dictionary
@@ -387,8 +380,8 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
     Set confs = New Dictionary
     For Each sheetname_ In drawing.GetSheetNames
         sheetname = sheetname_
-        Set aSheet = drawing.sheet(sheetname)
-        For Each aView_ In aSheet.GetViews
+        Set asheet = drawing.sheet(sheetname)
+        For Each aView_ In asheet.GetViews
             Set aView = aView_
             If Not aView.ReferencedDocument Is Nothing Then  'OPTIMIZE: просматриваются лишние виды
                 key = aView.GetReferencedModelName & "::" & aView.ReferencedConfiguration
@@ -418,6 +411,18 @@ Sub AttachFileToPDF(pdfname As String, attachname As String)
     CreateObject("WScript.Shell").Run """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" -attach-file """ & _
                                       attachname & """ """ & pdfname & """ -o """ & pdfname & """", _
                                       vbHide, True
+End Sub
+
+Sub ConverToPDF_A(pdfname As String)
+    Dim cmd As Object
+    Dim line As String
+    Dim pdfFileName As String
+
+    Set cmd = CreateObject("WScript.Shell")
+    cmd.CurrentDirectory = gFSO.GetParentFolderName(pdfname)
+    pdfFileName = gFSO.GetFileName(pdfname)
+    line = """" & swApp.GetCurrentMacroPathFolder & "\pdfa32.exe"" -c -x -f """ & pdfFileName & """ """ & pdfFileName & """"
+    cmd.Run line, vbHide, True
 End Sub
 
 Function GetDrawingNameWOext(ByRef drawingName As String) As String

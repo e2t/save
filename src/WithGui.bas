@@ -45,8 +45,8 @@ Sub AddExtension(ByRef exts() As String, ByRef index As Integer, ByRef fileExten
     End If
 End Sub
 
-Function GetChangeMode() As ChangeMode
-    GetChangeMode = MyForm.changeBox.ListIndex
+Function GetChangeMode() As String
+    GetChangeMode = MyForm.changeBox.text
 End Function
 
 Function HaveTRinThisDoc() As Boolean
@@ -93,9 +93,10 @@ End Sub
 Function InitSettings()  'mask for button
     Dim name_ As Variant
     Dim name As String
+    Dim rowChangeBox As Integer
 
     With MyForm
-        For Each name_ In namesChangeMode
+        For Each name_ In changesProperties.Keys
             name = name_
             .changeBox.AddItem name
         Next
@@ -103,7 +104,12 @@ Function InitSettings()  'mask for button
             name = name_
             .xlsNeedBox.AddItem name
         Next
-        .changeBox.ListIndex = GetIntSetting("changemode")
+        rowChangeBox = GetIntSetting("changemode")
+        If rowChangeBox <= .changeBox.ListCount - 1 Then
+            .changeBox.ListIndex = rowChangeBox
+        Else
+            .changeBox.ListIndex = 0
+        End If
         'after creating Form
         .scaleBox.value = AsBool(swApp.GetUserPreferenceIntegerValue(swDxfOutputNoScale))
         .pdfBox.value = GetBoolSetting("pdf")
@@ -195,6 +201,6 @@ Function GetExportModel() As ExportMode
     End If
 End Function
 
-Function GetEngViews() As Boolean
-    GetEngViews = (MyForm.changeBox.ListIndex = modeANSI)
+Function GetEngViews(properties As Dictionary) As Boolean
+    GetEngViews = properties.Exists(UseEnglishNames)
 End Function

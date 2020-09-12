@@ -67,7 +67,6 @@ Sub RewriteColumn(colExcel As Integer, colBOM As Integer, ByRef table As TableAn
     Dim text
     
     For row = 0 To table.RowCount - 1
-        'sheet.Cells(row + 1, colExcel).value = GetCellText(row, colBOM, table)
         Dim x() As Byte
         x = StrConv(GetCellText(row, colBOM, table), vbFromUnicode)
         Dim i As Variant
@@ -75,7 +74,7 @@ Sub RewriteColumn(colExcel As Integer, colBOM As Integer, ByRef table As TableAn
             If i < 256 Then
                 sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + Chr(i)
             Else
-                sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + ChrW(i)
+                sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + ChrW(i) 'для польских символов
             End If
         Next
     Next
@@ -243,13 +242,13 @@ Private Function Capitalize(text As String) As String
     
 End Function
 
-Private Function AddColumnToBOM(ByRef swTable As TableAnnotation, Prop As String) As Integer
+Private Function AddColumnToBOM(ByRef swTable As TableAnnotation, prop As String) As Integer
 
     AddColumnToBOM = 0
     Dim swBom As BomTableAnnotation
     Set swBom = swTable
-    If swTable.InsertColumn2(swTableItemInsertPosition_Last, 0, Prop, swInsertColumn_DefaultWidth) Then
-        swBom.SetColumnCustomProperty swTable.ColumnCount - 1, Prop
+    If swTable.InsertColumn2(swTableItemInsertPosition_Last, 0, prop, swInsertColumn_DefaultWidth) Then
+        swBom.SetColumnCustomProperty swTable.ColumnCount - 1, prop
         AddColumnToBOM = 1
     End If
     

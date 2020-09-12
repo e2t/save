@@ -13,6 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 'Written in 2015-2016 by Eduard E. Tikhenko <aquaried@gmail.com>
 '
 'To the extent possible under law, the author(s) have dedicated all copyright
@@ -68,7 +69,6 @@ End Sub
 
 Private Sub changeBox_Change()
     SaveIntSetting "changemode", changeBox.ListIndex
-    useEngNames = GetEngViews
     ChangeCaptions  'strong after changing the checkbox values
 End Sub
 

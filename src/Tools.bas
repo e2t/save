@@ -285,7 +285,7 @@ End Function
 Sub ActivateDoc(ByRef doc As ModelDoc2)
     Dim error As swActivateDocError_e
 
-    swApp.ActivateDoc3 doc.GetPathName, True, 0, error  ' if successfull, error = 0
+    swApp.ActivateDoc3 doc.GetPathName, False, swDontRebuildActiveDoc, error  ' if successfull, error = 0
 End Sub
 
 Function OpenThisDoc(filename As String) As ModelDoc2
@@ -296,10 +296,7 @@ Function OpenThisDoc(filename As String) As ModelDoc2
 End Function
 
 Function GetTypeDocument(filename As String) As swDocumentTypes_e
-    Dim fso As Object
-    
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Select Case UCase(fso.GetExtensionName(filename))
+    Select Case UCase(gFSO.GetExtensionName(filename))
         Case "SLDASM"
             GetTypeDocument = swDocASSEMBLY
         Case "SLDPRT"
@@ -337,7 +334,6 @@ Function GetDirOfActiveDoc() As String
     
     Set doc = swApp.ActiveDoc
     If Not doc Is Nothing Then
-        Dim fso As New FileSystemObject
-        GetDirOfActiveDoc = fso.GetParentFolderName(doc.GetPathName) + "\"
+        GetDirOfActiveDoc = gFSO.GetParentFolderName(doc.GetPathName) + "\"
     End If
 End Function

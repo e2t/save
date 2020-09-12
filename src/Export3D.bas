@@ -116,24 +116,19 @@ End Function
 
 Function ExportedFilename(drawing As ModelDoc2, modelname As String, _
                           propSign As String, propName As String) As String
-    Dim fso As Object
-    
-    Set fso = CreateObject("Scripting.FileSystemObject")
     ExportedFilename = _
         ExportedDirectory(drawing) & "\" & _
         propSign & " " & propName & _
-        " - Copy." & fso.GetExtensionName(modelname)
+        " - Copy." & gFSO.GetExtensionName(modelname)
 End Function
 
 Function ExportedDirectory(drawing As ModelDoc2) As String
     Const suffix As String = "Копии моделей"
-    Dim fso As Object
     Dim newFolder As String
     
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    newFolder = fso.GetParentFolderName(drawing.GetPathName) & "\" & suffix
-    If Not fso.FolderExists(newFolder) Then
-        fso.CreateFolder newFolder
+    newFolder = gFSO.GetParentFolderName(drawing.GetPathName) & "\" & suffix
+    If Not gFSO.FolderExists(newFolder) Then
+        gFSO.CreateFolder newFolder
     End If
     ExportedDirectory = newFolder
 End Function

@@ -12,22 +12,18 @@ Option Explicit
 
 Private drawingProperties(5) As String
 Private modelProperties(0) As String
-Private changesProperties(modeAsIs - 1) As Object
+Public changesProperties As Dictionary
+
+Public Const UseEnglishNames = "@UseEnglishNames"
+Public Const pDevel = "Разработал"
+Public Const pDraft = "Начертил"
+Public Const pCheck = "Проверил"
+Public Const pTech = "Техконтроль"
+Public Const pNorm = "Нормоконтроль"
+Public Const pAppr = "Утвердил"
+Public Const pFirm = "Организация"
 
 Function InitializeProperties()  'mask for button
-
-    Dim defaultProperties As Dictionary
-    Dim drokinProperties As Dictionary
-    Dim ekotonProperties As Dictionary
-    Dim polandProperties As Dictionary
-    Dim ansiProperties As Dictionary
-    Const pDevel As String = "Разработал"
-    Const pDraft As String = "Начертил"
-    Const pCheck As String = "Проверил"
-    Const pTech As String = "Техконтроль"
-    Const pNorm As String = "Нормоконтроль"
-    Const pAppr As String = "Утвердил"
-    Const pFirm As String = "Организация"
     
     'properties of model
     modelProperties(0) = pDevel
@@ -38,52 +34,16 @@ Function InitializeProperties()  'mask for button
     drawingProperties(3) = pNorm
     drawingProperties(4) = pAppr
     drawingProperties(5) = pFirm
-    'changes by default
-    Set defaultProperties = New Dictionary
-    defaultProperties.Add pCheck, ""
-    defaultProperties.Add pTech, ""
-    defaultProperties.Add pNorm, ""
-    defaultProperties.Add pAppr, ""
-    defaultProperties.Add pFirm, ""
-    'changes for Drokin
-    Set drokinProperties = New Dictionary
-    drokinProperties.Add pDevel, "Горбенко"
-    drokinProperties.Add pDraft, "Горбенко"
-    drokinProperties.Add pCheck, "Григоров"
-    drokinProperties.Add pTech, ""
-    drokinProperties.Add pNorm, ""
-    drokinProperties.Add pAppr, "Дрокин"
-    drokinProperties.Add pFirm, "ИП ""Дрокин"""
-    'changes for Ekoton
-    Set ekotonProperties = New Dictionary
-    ekotonProperties.Add pDevel, "Холодов"
-    ekotonProperties.Add pDraft, "Холодов"
-    ekotonProperties.Add pCheck, "Вершинина"
-    ekotonProperties.Add pTech, "Вершинина"
-    ekotonProperties.Add pNorm, "Вершинина"
-    ekotonProperties.Add pAppr, "Ватта"
-    ekotonProperties.Add pFirm, "ЗАО НПФ ""Экотон"""
-    'changes for Poland
-    Set polandProperties = New Dictionary
-    polandProperties.Add pFirm, "ООО ""Эко-Инвест"""
-    'changes for ANSI
-    Set ansiProperties = New Dictionary
-    ansiProperties.Add pCheck, "Urikov"
-    ansiProperties.Add pTech, "Gumennyj"
-    ansiProperties.Add pNorm, "Urikov"
-    ansiProperties.Add pAppr, "Gumennyj"
-    ansiProperties.Add pFirm, "Ekoton Industrial Group"
+    
     'all variants of the changes
-    Set changesProperties(modeDefault) = defaultProperties
-    Set changesProperties(modeDrokin) = drokinProperties
-    Set changesProperties(modeEkoton) = ekotonProperties
-    Set changesProperties(modePoland) = polandProperties
-    Set changesProperties(modeANSI) = ansiProperties
+    Set changesProperties = New Dictionary
+    changesProperties.Add "Без изменений", New Dictionary
+    GetRowsFromFile
 
 End Function
 
 Sub ReserveAllProperties(ByRef propMgrs As Dictionary, ByRef values As Dictionary, _
-                      ByRef drawing As DrawingDoc)
+                         ByRef drawing As DrawingDoc)
 
     Dim propName_ As Variant
     Dim propName As String
@@ -116,11 +76,9 @@ Sub ReserveAllProperties(ByRef propMgrs As Dictionary, ByRef values As Dictionar
 
 End Sub
 
-Sub ChangeAllProperties(ByRef mgrs As Dictionary, mode As ChangeMode)
+Sub ChangeAllProperties(ByRef mgrs As Dictionary, mode As String)
     
-    If mode <> modeAsIs Then
-        ChangePropertiesBy mgrs, changesProperties(mode)
-    End If
+    ChangePropertiesBy mgrs, changesProperties(mode)
 
 End Sub
 
@@ -136,10 +94,12 @@ Sub ChangePropertiesBy(ByRef mgrs As Dictionary, ByRef changes As Dictionary)
     Dim propName As String
 
     For Each propName_ In changes.Keys
+        If propName_ = UseEnglishNames Then GoTo NextFor
         propName = propName_
         If mgrs.Exists(propName) Then  'TODO: property skips if it dont exists. Need to create and to remove after
             SetProperty mgrs(propName), propName, changes(propName)
         End If
+NextFor:
     Next
 
 End Sub
