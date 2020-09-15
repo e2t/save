@@ -222,7 +222,6 @@ Sub TryConvertDoc(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode
     
     SaveThisDoc doc
     If Not abort And closeAfter Then
-        'swApp.CloseDoc doc.GetPathName
         swApp.QuitDoc doc.GetPathName
     End If
 End Sub
@@ -350,7 +349,6 @@ Function SaveDrawingAs(ByRef drawing As DrawingDoc, ByRef fileExtension As Strin
         If attachStep Then
             AttachModelToPDF drawing, pdfnames(0), abort
         End If
-        ConverToPDF_A pdfnames(0)
         If openAfter Then
             For Each pdfname_ In pdfnames
                 pdfname = pdfname_
@@ -411,18 +409,6 @@ Sub AttachFileToPDF(pdfname As String, attachname As String)
     CreateObject("WScript.Shell").Run """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" -attach-file """ & _
                                       attachname & """ """ & pdfname & """ -o """ & pdfname & """", _
                                       vbHide, True
-End Sub
-
-Sub ConverToPDF_A(pdfname As String)
-    Dim cmd As Object
-    Dim line As String
-    Dim pdfFileName As String
-
-    Set cmd = CreateObject("WScript.Shell")
-    cmd.CurrentDirectory = gFSO.GetParentFolderName(pdfname)
-    pdfFileName = gFSO.GetFileName(pdfname)
-    line = """" & swApp.GetCurrentMacroPathFolder & "\pdfa32.exe"" -c -x -f """ & pdfFileName & """ """ & pdfFileName & """"
-    cmd.Run line, vbHide, True
 End Sub
 
 Function GetDrawingNameWOext(ByRef drawingName As String) As String
