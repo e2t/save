@@ -87,19 +87,21 @@ Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
     
     sheet.Cells.NumberFormat = "@"
     
-    Dim aDesignation(2) As String
+    Dim aDesignation(3) As String
     aDesignation(0) = "Обозначение"
     aDesignation(1) = "Designation"
     aDesignation(2) = "Item"
+    aDesignation(3) = "Позначення"
     colsign = GetColumnOf(aDesignation, table)
     If colsign < 0 Then Exit Sub
     
     RewriteColumn xlsColumnDesignation, colsign, table, sheet
     
     ' Configurations are placed after Name always
-    Dim aName(1) As String
+    Dim aName(2) As String
     aName(0) = "Наименование"
     aName(1) = "Name"
+    aName(2) = "Найменування"
     colname = GetColumnOf(aName, table)
     If colname < 0 Then Exit Sub
     For i = colname To table.ColumnCount - 1
@@ -242,13 +244,13 @@ Private Function Capitalize(text As String) As String
     
 End Function
 
-Private Function AddColumnToBOM(ByRef swTable As TableAnnotation, prop As String) As Integer
+Private Function AddColumnToBOM(ByRef swTable As TableAnnotation, Prop As String) As Integer
 
     AddColumnToBOM = 0
     Dim swBom As BomTableAnnotation
     Set swBom = swTable
-    If swTable.InsertColumn2(swTableItemInsertPosition_Last, 0, prop, swInsertColumn_DefaultWidth) Then
-        swBom.SetColumnCustomProperty swTable.ColumnCount - 1, prop
+    If swTable.InsertColumn2(swTableItemInsertPosition_Last, 0, Prop, swInsertColumn_DefaultWidth) Then
+        swBom.SetColumnCustomProperty swTable.ColumnCount - 1, Prop
         AddColumnToBOM = 1
     End If
     
