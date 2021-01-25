@@ -1,13 +1,4 @@
 Attribute VB_Name = "Main"
-'Written in 2015-2016 by Eduard E. Tikhenko <aquaried@gmail.com>
-'
-'To the extent possible under law, the author(s) have dedicated all copyright
-'and related and neighboring rights to this software to the public domain
-'worldwide. This software is distributed without any warranty.
-'You should have received a copy of the CC0 Public Domain Dedication along
-'with this software.
-'If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
-
 Option Explicit
 
 Public Const macroName As String = "Save3"
@@ -74,98 +65,105 @@ End Function
 
 Sub ConvertDocs(aForAllMode As ForAllMode)
 
-    Dim doc_ As Variant
-    Dim doc As ModelDoc2
-    Dim fileExtensions() As String
-    Dim mode As String
-    Dim closeAfter As Boolean
-    Dim openAfter As Boolean
-    Dim singly As Boolean
-    Dim incChanging As Boolean
-    Dim breakChanging As Boolean
-    Dim abort As Boolean
-    Dim attachStep As Boolean
-    Dim xlsNeed As XlsNeedMode
-    Dim Translate As Boolean
-    Dim preview As Boolean
-    Dim Export3D As ExportMode
-    Dim oldUseEnglishLang As Boolean
+   Dim doc_ As Variant
+   Dim doc As ModelDoc2
+   Dim fileExtensions() As String
+   Dim mode As String
+   Dim closeAfter As Boolean
+   Dim openAfter As Boolean
+   Dim singly As Boolean
+   Dim incChanging As Boolean
+   Dim breakChanging As Boolean
+   Dim abort As Boolean
+   Dim attachStep As Boolean
+   Dim xlsNeed As XlsNeedMode
+   Dim Translate As Boolean
+   Dim preview As Boolean
+   Dim Export3D As ExportMode
+   Dim oldUseEnglishLang As Boolean
+   Dim isColoredPdf As Boolean
+   Dim oldIsColoredPdf As Boolean
 
-    If HaveOpenedDocs(swApp) Then
-        fileExtensions = GetFileExtensions
-        mode = GetChangeMode
-        closeAfter = GetCloseAfter
-        openAfter = GetOpenAfter
-        singly = GetSingly
-        incChanging = GetIncChanging
-        breakChanging = GetBreakChanging
-        abort = False
-        attachStep = GetAttachStep
-        xlsNeed = GetXlsNeed
-        Translate = GetNeedTranslate
-        preview = GetNeedPreview
-        Export3D = GetExportModel
-        useEngNames = GetEngViews(changesProperties(mode))
-        
-        If useEngNames Then
-            oldUseEnglishLang = swApp.GetUserPreferenceToggle(swUseEnglishLanguageFeatureNames)
-            swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, True
-        End If
-        
-        If aForAllMode = forAllOpened Then
-            For Each doc_ In swApp.GetDocuments
-                Set doc = doc_
-                TryConvertDoc doc, fileExtensions, mode, closeAfter, openAfter, singly, _
-                              incChanging, breakChanging, abort, attachStep, xlsNeed, _
-                              Translate, preview, Export3D
-                If abort Then Exit For
-            Next
-            
-        ElseIf aForAllMode = forAllInFolder Then
-            Dim file_ As Variant
-            Dim file As Object
-            Dim dirOfActiveDoc As String
-            Dim folder As Object
-            Dim filename As String
-            Dim maybeCloseAfter As Boolean
-            Dim err As swFileLoadError_e
-            Dim wrn As swFileLoadWarning_e
-            
-            Set folder = gFSO.GetFolder(GetDirOfActiveDoc)
-            For Each file_ In folder.Files
-                Set file = file_
-                filename = LCase(file.Path)
-                If InStr(filename, "slddrw") > 0 And InStr(filename, "~$") = 0 Then
-                    Set doc = swApp.OpenDoc6(filename, swDocDRAWING, swOpenDocOptions_Silent, "", err, wrn)
-                    If wrn = swFileLoadWarning_AlreadyOpen Then
-                        maybeCloseAfter = closeAfter
-                    Else
-                        maybeCloseAfter = True
-                    End If
-                    
-                    ''' job
-                    TryConvertDoc doc, fileExtensions, mode, maybeCloseAfter, openAfter, singly, _
-                              incChanging, breakChanging, abort, attachStep, xlsNeed, _
-                              Translate, preview, Export3D
-                    Set doc = Nothing
-                    If abort Then Exit For
-                    ''' end job
-                End If
-            Next
-            
-        Else
-            TryConvertDoc swApp.ActiveDoc, fileExtensions, mode, closeAfter, openAfter, singly, _
-                          incChanging, breakChanging, abort, attachStep, xlsNeed, Translate, _
-                          preview, Export3D
-        End If
-        
-        If useEngNames Then
-            swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, oldUseEnglishLang
-        End If
-        Unload MyForm
-    Else
-        MsgBox "Не открытых документов.", vbCritical
-    End If
+   If HaveOpenedDocs(swApp) Then
+      fileExtensions = GetFileExtensions
+      mode = GetChangeMode
+      closeAfter = GetCloseAfter
+      openAfter = GetOpenAfter
+      singly = GetSingly
+      incChanging = GetIncChanging
+      breakChanging = GetBreakChanging
+      abort = False
+      attachStep = GetAttachStep
+      xlsNeed = GetXlsNeed
+      Translate = GetNeedTranslate
+      preview = GetNeedPreview
+      Export3D = GetExportModel
+      useEngNames = GetEngViews(changesProperties(mode))
+      isColoredPdf = GetIsColoredPdf
+      
+      oldIsColoredPdf = swApp.GetUserPreferenceToggle(swPDFExportInColor)
+      swApp.SetUserPreferenceToggle swPDFExportInColor, isColoredPdf
+      
+      If useEngNames Then
+         oldUseEnglishLang = swApp.GetUserPreferenceToggle(swUseEnglishLanguageFeatureNames)
+         swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, True
+      End If
+      
+      If aForAllMode = forAllOpened Then
+         For Each doc_ In swApp.GetDocuments
+            Set doc = doc_
+            TryConvertDoc doc, fileExtensions, mode, closeAfter, openAfter, singly, _
+                          incChanging, breakChanging, abort, attachStep, xlsNeed, _
+                          Translate, preview, Export3D
+            If abort Then Exit For
+         Next
+          
+      ElseIf aForAllMode = forAllInFolder Then
+         Dim file_ As Variant
+         Dim file As Object
+         Dim dirOfActiveDoc As String
+         Dim folder As Object
+         Dim filename As String
+         Dim maybeCloseAfter As Boolean
+         Dim err As swFileLoadError_e
+         Dim wrn As swFileLoadWarning_e
+         
+         Set folder = gFSO.GetFolder(GetDirOfActiveDoc)
+         For Each file_ In folder.Files
+            Set file = file_
+            filename = LCase(file.Path)
+            If InStr(filename, "slddrw") > 0 And InStr(filename, "~$") = 0 Then
+               Set doc = swApp.OpenDoc6(filename, swDocDRAWING, swOpenDocOptions_Silent, "", err, wrn)
+               If wrn = swFileLoadWarning_AlreadyOpen Then
+                  maybeCloseAfter = closeAfter
+               Else
+                  maybeCloseAfter = True
+               End If
+               
+               ''' job
+               TryConvertDoc doc, fileExtensions, mode, maybeCloseAfter, openAfter, singly, _
+                             incChanging, breakChanging, abort, attachStep, xlsNeed, _
+                             Translate, preview, Export3D
+               Set doc = Nothing
+               If abort Then Exit For
+               ''' end job
+            End If
+         Next
+          
+      Else
+         TryConvertDoc swApp.ActiveDoc, fileExtensions, mode, closeAfter, openAfter, singly, _
+                       incChanging, breakChanging, abort, attachStep, xlsNeed, Translate, _
+                       preview, Export3D
+      End If
+       
+      If useEngNames Then
+         swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, oldUseEnglishLang
+      End If
+      swApp.SetUserPreferenceToggle swPDFExportInColor, oldIsColoredPdf
+      Unload MyForm
+   Else
+      MsgBox "Не открытых документов.", vbCritical
+   End If
 
 End Sub
 
@@ -288,21 +286,23 @@ End Function
 
 Function IsNeedXLS(drawing As DrawingDoc, xlsNeed As XlsNeedMode) As Boolean
     
-    Dim miniSign As String
-    
-    If xlsNeed = xlsNoNeed Then
-        IsNeedXLS = False
-    Else
-        GetDrawingProperty miniSign, drawing, "Пометка"
-        If miniSign <> "СБ" And miniSign <> "AD" And _
-           miniSign <> "МЧ" And miniSign <> "ID" Then
-            IsNeedXLS = False
-        ElseIf xlsNeed = xlsNeedForNew Then
-            IsNeedXLS = (GetNumberChanging(drawing) = 0)
-        Else
+   Dim miniSign As String
+   
+   If xlsNeed = xlsNoNeed Then
+      IsNeedXLS = False
+   Else
+      GetDrawingProperty miniSign, drawing, "Пометка"
+      Select Case miniSign
+         Case "СБ", "AD", "МЧ", "ID", "РСБ", "УЧ"
             IsNeedXLS = True
-        End If
-    End If
+         Case Else
+            If xlsNeed = xlsNeedForNew Then
+               IsNeedXLS = (GetNumberChanging(drawing) = 0)
+            Else
+               IsNeedXLS = False
+            End If
+      End Select
+   End If
 
 End Function
 
@@ -498,3 +498,10 @@ Sub TranslateView(aView As View)
         End If
     Next
 End Sub
+
+Function ExitApp() 'mask
+
+   Unload MyForm
+   End
+
+End Function

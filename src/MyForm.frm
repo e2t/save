@@ -13,16 +13,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-'Written in 2015-2016 by Eduard E. Tikhenko <aquaried@gmail.com>
-'
-'To the extent possible under law, the author(s) have dedicated all copyright
-'and related and neighboring rights to this software to the public domain
-'worldwide. This software is distributed without any warranty.
-'You should have received a copy of the CC0 Public Domain Dedication along
-'with this software.
-'If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
-
 Option Explicit
 
 Public Function IsForAll() As Boolean
@@ -64,7 +54,7 @@ Private Sub breakBox_Click()
 End Sub
 
 Private Sub cancelBut_Click()
-    Unload Me
+    ExitApp
 End Sub
 
 Private Sub changeBox_Change()
@@ -82,6 +72,10 @@ End Sub
 
 Private Sub closeBox_Click()
     SaveBoolSetting "close", closeBox.value
+End Sub
+
+Private Sub colorBox_Click()
+   SaveBoolSetting "colorpdf", colorBox.value
 End Sub
 
 Private Sub incBox_Click()

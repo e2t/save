@@ -1,13 +1,4 @@
 Attribute VB_Name = "WithGui"
-'Written in 2015-2016 by Eduard E. Tikhenko <aquaried@gmail.com>
-'
-'To the extent possible under law, the author(s) have dedicated all copyright
-'and related and neighboring rights to this software to the public domain
-'worldwide. This software is distributed without any warranty.
-'You should have received a copy of the CC0 Public Domain Dedication along
-'with this software.
-'If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
-
 Option Explicit
 
 Enum IncBoxMode
@@ -120,6 +111,7 @@ Function InitSettings()  'mask for button
         .closeBox.value = GetBoolSetting("close")
         .openBox.value = GetBoolSetting("open")
         .singlyBox.value = GetBoolSetting("singly")
+        .colorBox.value = GetBoolSetting("colorpdf")
         .attachBox.value = GetBoolSetting("attach")
         .xlsNeedBox.ListIndex = GetIntSetting("xlsneed")
         .chkTranslate.value = GetBoolSetting("translate")
@@ -189,6 +181,10 @@ End Function
 
 Function GetNeedPreview() As Boolean
     GetNeedPreview = MyForm.chkPreview.value
+End Function
+
+Function GetIsColoredPdf() As Boolean
+   GetIsColoredPdf = MyForm.colorBox.value
 End Function
 
 Function GetExportModel() As ExportMode

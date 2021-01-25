@@ -1,13 +1,4 @@
 Attribute VB_Name = "Exceling"
-'Written in 2015-2017 by Eduard E. Tikhenko <aquaried@gmail.com>
-'
-'To the extent possible under law, the author(s) have dedicated all copyright
-'and related and neighboring rights to this software to the public domain
-'worldwide. This software is distributed without any warranty.
-'You should have received a copy of the CC0 Public Domain Dedication along
-'with this software.
-'If not, see <http://creativecommons.org/publicdomain/zero/1.0/>
-
 Option Explicit
 
 Private Const xlsColumnDesignation As Integer = 1
@@ -31,25 +22,24 @@ Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
     
 End Function
 
-Function GetColumnOf(colnames() As String, ByRef table As TableAnnotation) As Integer
-    Dim i As Integer
-    
-    GetColumnOf = -1
-    For i = 0 To table.ColumnCount - 1
-        Dim j
-        For Each j In colnames
-            Dim colname As String
-            colname = j
-            If table.DisplayedText(0, i) Like ("*" & AnyCase(colname) & "*") Then
-                GetColumnOf = i
-                Exit Function
-            End If
-        Next
-    Next
-    MsgBox "Не найден столбец """ & colnames(0) & """"
+Function GetColumnOf(property As String, table As TableAnnotation) As Integer
+   
+   Dim i As Integer
+   Dim bomTable As BomTableAnnotation
+   
+   GetColumnOf = -1
+   Set bomTable = table
+   For i = 0 To table.ColumnCount - 1
+      If StrComp(bomTable.GetColumnCustomProperty(i), property, vbTextCompare) = 0 Then
+         GetColumnOf = i
+         Exit Function
+      End If
+   Next
+
 End Function
 
 Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotation) As String
+
     Dim text As String
     
     text = table.DisplayedText(row, col)
@@ -60,58 +50,112 @@ Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotat
     End If
     text = Replace(text, vbCrLf, " ")
     GetCellText = text
+    
 End Function
 
-Sub RewriteColumn(colExcel As Integer, colBOM As Integer, ByRef table As TableAnnotation, sheet As Excel.Worksheet)
-    Dim row As Integer
-    Dim text
-    
-    For row = 0 To table.RowCount - 1
-        Dim x() As Byte
-        x = StrConv(GetCellText(row, colBOM, table), vbFromUnicode)
-        Dim i As Variant
-        For Each i In x
-            If i < 256 Then
-                sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + Chr(i)
-            Else
-                sheet.Cells(row + 1, colExcel).value = sheet.Cells(row + 1, colExcel).value + ChrW(i) 'для польских символов
-            End If
-        Next
-    Next
+Sub RewriteCell(text As String, cell As Range)
+
+   Dim x() As Byte
+   Dim i As Variant
+   Dim symbol As String
+   
+   x = StrConv(text, vbFromUnicode)
+   For Each i In x
+      If i < 256 Then
+         symbol = Chr(i)
+      Else
+         symbol = ChrW(i) 'для польских символов
+      End If
+      cell.value = cell.value + symbol
+   Next
+   
 End Sub
 
-Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
-    Dim colsign As Integer
-    Dim colname As Integer
-    Dim i As Integer
-    
-    sheet.Cells.NumberFormat = "@"
-    
-    Dim aDesignation(3) As String
-    aDesignation(0) = "Обозначение"
-    aDesignation(1) = "Designation"
-    aDesignation(2) = "Item"
-    aDesignation(3) = "Позначення"
-    colsign = GetColumnOf(aDesignation, table)
-    If colsign < 0 Then Exit Sub
-    
-    RewriteColumn xlsColumnDesignation, colsign, table, sheet
-    
-    ' Configurations are placed after Name always
-    Dim aName(2) As String
-    aName(0) = "Наименование"
-    aName(1) = "Name"
-    aName(2) = "Найменування"
-    colname = GetColumnOf(aName, table)
-    If colname < 0 Then Exit Sub
-    For i = colname To table.ColumnCount - 1
-        RewriteColumn xlsColumnNaming - colname + i, i, table, sheet
-    Next
+Sub RewriteColumn(colExcel As Integer, colBom As Integer, ByRef table As TableAnnotation, _
+                  sheet As Excel.Worksheet, header As String)
+                  
+   Dim row As Integer
+   
+   RewriteCell header, sheet.Cells(1, colExcel)
+   For row = 1 To table.RowCount - 1
+      RewriteCell GetCellText(row, colBom, table), sheet.Cells(row + 1, colExcel)
+   Next
+   
+End Sub
 
-    FormatXLS sheet
+Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotation, sheet As Excel.Worksheet)
+
+   Dim needRemove As Boolean
+   Dim col As Integer
+   
+   needRemove = False
+   col = GetColumnOf(property, table)
+   If col < 0 Then
+      col = AddColumnToBOM(property, table)
+      If col < 0 Then
+         If MsgBox("Невозможно добавить столбец """ & property & """.", vbOKCancel) = vbCancel Then
+            ExitApp
+         Else
+            Exit Sub
+         End If
+      End If
+      needRemove = True
+   End If
+   RewriteColumn xlsCol, col, table, sheet, property
+   If needRemove Then
+      table.DeleteColumn col
+   End If
+
+End Sub
+
+'Sub WriteColumnOfName(xlsCol As Integer, table As TableAnnotation, sheet As Excel.Worksheet)
+   
+'   WriteColumnOf "Наименование", xlsColumnNaming, table, sheet
+   
+'End Sub
+
+Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
+
+   Dim col As Integer
+   Dim delta As Integer
+   
+   sheet.Cells.NumberFormat = "@"
+   
+   WriteColumnOf "Обозначение", xlsColumnDesignation, table, sheet
+   WriteColumnOf "Наименование", xlsColumnNaming, table, sheet
+   
+   delta = 1
+   For col = 0 To table.ColumnCount - 1
+      If table.GetColumnType(col) = swBomTableColumnType_Quantity Then
+         RewriteColumn xlsColumnNaming + delta, col, table, sheet, GetCellText(0, col, table)
+         delta = delta + 1
+      End If
+   Next
+   
+   WriteColumnOf "Примечание", xlsColumnNaming + delta, table, sheet
+   delta = delta + 1
+   
+   WriteColumnOf "Заготовка", xlsColumnNaming + delta, table, sheet
+   delta = delta + 1
+   
+   WriteColumnOf "Материал", xlsColumnNaming + delta, table, sheet
+   delta = delta + 1
+   
+   WriteColumnOf "Типоразмер", xlsColumnNaming + delta, table, sheet
+   delta = delta + 1
+   
+   WriteColumnOf "Длина", xlsColumnNaming + delta, table, sheet
+   delta = delta + 1
+   
+   WriteColumnOf "Ширина", xlsColumnNaming + delta, table, sheet
+   delta = delta + 1
+   
+   FormatXLS sheet
+   
 End Sub
 
 Sub FormatXLS(sheet As Excel.Worksheet)
+
     Dim i As Integer
     
     For i = 6 To sheet.UsedRange.Columns.Count - 1
@@ -165,9 +209,11 @@ Sub FormatXLS(sheet As Excel.Worksheet)
     
     sheet.Columns(xlsColumnDesignation).AutoFit
     sheet.Columns(xlsColumnNaming).AutoFit
+    
 End Sub
 
 Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
+
     Const warning As String = "Спецификация не будет создана."
     Dim xlsfile As String
     Dim xlApp As Excel.Application
@@ -189,26 +235,10 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
             Exit Sub
         End If
         
-        'add columns
-        Dim countNewColumns As Integer
-        countNewColumns = AddColumnToBOM(swTable, "Заготовка") + _
-                          AddColumnToBOM(swTable, "Материал") + _
-                          AddColumnToBOM(swTable, "Типоразмер") + _
-                          AddColumnToBOM(swTable, "Длина") + _
-                          AddColumnToBOM(swTable, "Ширина")
-                          
         'Open Excel
         Set xlApp = New Excel.Application
         Set ExcelBOM = xlApp.Workbooks.Add
         ImportBOMtoXLS swTable, ExcelBOM.Worksheets(1)
-        
-        'remove columns
-        Dim i As Integer
-        If countNewColumns > 0 Then
-            For i = 1 To countNewColumns
-                swTable.DeleteColumn swTable.ColumnCount - 1
-            Next
-        End If
         
         'Close Excel
         ExcelBOM.SaveAs xlsfile, 39, , , , , , 2
@@ -217,11 +247,13 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
         Set ExcelBOM = Nothing
         Set xlApp = Nothing
     End If
+    
 End Sub
 
 Private Function AnyCase(text As String) As String
 
     Dim i As Integer, length As Integer, char As String
+    
     AnyCase = ""
     length = Len(text)
     If length > 0 Then
@@ -244,14 +276,15 @@ Private Function Capitalize(text As String) As String
     
 End Function
 
-Private Function AddColumnToBOM(ByRef swTable As TableAnnotation, Prop As String) As Integer
+Private Function AddColumnToBOM(Prop As String, swTable As TableAnnotation) As Integer
 
-    AddColumnToBOM = 0
     Dim swBom As BomTableAnnotation
     Set swBom = swTable
+    
+    AddColumnToBOM = -1
     If swTable.InsertColumn2(swTableItemInsertPosition_Last, 0, Prop, swInsertColumn_DefaultWidth) Then
         swBom.SetColumnCustomProperty swTable.ColumnCount - 1, Prop
-        AddColumnToBOM = 1
+        AddColumnToBOM = swTable.ColumnCount - 1
     End If
     
 End Function
