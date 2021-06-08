@@ -419,7 +419,8 @@ End Function
 
 Function FormatNumberOfChanging(number As Integer) As String
     Dim revLabel As String
-    revLabel = IIf(useEngNames, "rev", "изм")
+    'revLabel = IIf(useEngNames, "rev", "изм")
+    revLabel = "rev"
     
     If number > 0 Then
         FormatNumberOfChanging = " (" & revLabel & "." & Format(number, "00") & ")"
