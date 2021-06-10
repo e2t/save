@@ -108,12 +108,6 @@ Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotatio
 
 End Sub
 
-'Sub WriteColumnOfName(xlsCol As Integer, table As TableAnnotation, sheet As Excel.Worksheet)
-   
-'   WriteColumnOf "Наименование", xlsColumnNaming, table, sheet
-   
-'End Sub
-
 Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
 
    Dim col As Integer

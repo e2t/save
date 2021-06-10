@@ -293,7 +293,7 @@ Function IsNeedXLS(drawing As DrawingDoc, xlsNeed As XlsNeedMode) As Boolean
    Else
       GetDrawingProperty miniSign, drawing, "Ïîìåòêà"
       Select Case miniSign
-         Case "ÑÁ", "AD", "Ì×", "ID", "ÐÑÁ", "Ó×"
+         Case "ÑÁ", "AD", "Ì×", "ID", "ÐÑÁ", "Ó×", ".AD", ".ID"
             IsNeedXLS = True
          Case Else
             If xlsNeed = xlsNeedForNew Then
