@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} MyForm 
-   Caption         =   "Сохранить чертеж как"
+   Caption         =   "Save document"
    ClientHeight    =   5745
    ClientLeft      =   45
    ClientTop       =   375
@@ -13,6 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 Option Explicit
 
 Public Function IsForAll() As Boolean

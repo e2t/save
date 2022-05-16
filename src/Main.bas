@@ -306,6 +306,14 @@ Function IsNeedXLS(drawing As DrawingDoc, xlsNeed As XlsNeedMode) As Boolean
 
 End Function
 
+Function SaveDrawingAsPDF(drawing As DrawingDoc, pdfname As String, _
+                          data As IExportPdfData, ByRef abort As Boolean) As Boolean
+
+  SaveDrawingAsPDF = TrySaveDocAs(drawing, pdfname, data, abort)
+  RemoveMetadataFromPDF pdfname
+  
+End Function
+
 Function SaveDrawingAs(ByRef drawing As DrawingDoc, ByRef fileExtension As String, _
                        openAfter As Boolean, singly As Boolean, ByRef abort As Boolean, _
                        attachStep As Boolean, Translate As Boolean) As Boolean
@@ -334,14 +342,14 @@ Function SaveDrawingAs(ByRef drawing As DrawingDoc, ByRef fileExtension As Strin
                 specifiedSheet(0) = sheetname
                 data.SetSheets swExportData_ExportSpecifiedSheets, specifiedSheet
                 SaveDrawingAs = SaveDrawingAs And _
-                                TrySaveDocAs(drawing, InsertSheetName(filename, sheetname), data, abort)
+                                SaveDrawingAsPDF(drawing, InsertSheetName(filename, sheetname), data, abort)
                 pdfnames(i) = InsertSheetName(filename, sheetname)
                 i = i + 1
                 If abort Then Exit For
             Next
         Else
             data.SetSheets swExportData_ExportAllSheets, drawing.GetSheetNames
-            SaveDrawingAs = TrySaveDocAs(drawing, filename, data, abort)
+            SaveDrawingAs = SaveDrawingAsPDF(drawing, filename, data, abort)
             pdfnames(0) = filename
         End If
         Set data = Nothing
@@ -406,9 +414,28 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
 End Sub
 
 Sub AttachFileToPDF(pdfname As String, attachname As String)
-    CreateObject("WScript.Shell").Run """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" -attach-file """ & _
-                                      attachname & """ """ & pdfname & """ -o """ & pdfname & """", _
-                                      vbHide, True
+
+  Dim cpdf As String
+  Dim rewrite As String
+  
+  cpdf = """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" "
+  rewrite = " -o """ & pdfname & """ """ & pdfname & """"
+  
+  CreateObject("WScript.Shell").Run cpdf & "-attach-file """ & attachname & """" & rewrite, vbHide, True
+End Sub
+
+Sub RemoveMetadataFromPDF(pdfname As String)
+  
+  Dim cpdf As String
+  Dim rewrite As String
+  
+  cpdf = """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" "
+  rewrite = " -o """ & pdfname & """ """ & pdfname & """"
+
+  CreateObject("WScript.Shell").Run cpdf & "-remove-metadata" & rewrite, vbHide, True
+  CreateObject("WScript.Shell").Run cpdf & "-set-author """"" & rewrite, vbHide, True
+  CreateObject("WScript.Shell").Run cpdf & "-set-creator """"" & rewrite, vbHide, True
+  CreateObject("WScript.Shell").Run cpdf & "-set-producer """"" & rewrite, vbHide, True
 End Sub
 
 Function GetDrawingNameWOext(ByRef drawingName As String) As String
