@@ -1,30 +1,6 @@
 Attribute VB_Name = "Export3D"
 Option Explicit
 
-Sub ExportModel(drawing As ModelDoc2, ByRef abort As Boolean, Export3D As ExportMode)
-    Dim model As ModelDoc2
-    Dim newname As String
-    Dim remark As String
-    Dim curconf As String
-    Dim defView As View
-        
-    Set defView = FindDefaultView(drawing)
-    Set model = defView.ReferencedDocument
-    curconf = defView.ReferencedConfiguration
-    If model.GetType = swDocPART Then
-        GetDrawingProperty remark, drawing, "Пометка"
-        If remark <> "СБ" And remark <> "ВО" And remark <> "МЧ" Then
-            If Export3D = exportCurrent Then
-                ExtractOneConfiguration drawing, model, curconf, abort
-            ElseIf Export3D = exportLiked Then
-                ExtractLikedConfigurations drawing, model, curconf, abort
-            Else
-                MsgBox "Ошибка при экспорте модели", vbCritical
-            End If
-        End If
-    End If
-End Sub
-
 Sub ExtractLikedConfigurations(drawing As ModelDoc2, model As ModelDoc2, _
                                curconf As String, ByRef abort As Boolean)
     Dim propSign As String
@@ -127,14 +103,14 @@ End Function
 Private Function GetPropertyName(model As ModelDoc2, conf As String) As String
     Dim value As String
     
-    GetModelProperty value, model, conf, "Наименование"
+    GetModelProperty value, model, conf, pName
     GetPropertyName = value
 End Function
 
 Private Function GetPropertySign(model As ModelDoc2, conf As String) As String
     Dim value As String
     
-    GetModelProperty value, model, conf, "Обозначение"
+    GetModelProperty value, model, conf, pDsg
     GetPropertySign = value
 End Function
 

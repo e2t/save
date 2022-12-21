@@ -88,7 +88,7 @@ Function InsertSheetName(ByRef filename As String, ByRef sheetname As String) As
     
     posDot = InStrRev(filename, ".")
     InsertSheetName = Left(filename, posDot - 1) & " - " & sheetname & "." & _
-                     Right(filename, Len(filename) - posDot)
+                      Right(filename, Len(filename) - posDot)
 
 End Function
 
@@ -150,18 +150,17 @@ Function IsFileExists(fullname As String, Optional attr As VbFileAttribute = vbN
     
 End Function
 
-Function GetProperty(ByRef value As String, ByRef modelMgr As CustomPropertyManager, _
-                     ByRef propertyName As String) As Boolean
+Function GetProperty(ByRef value As String, modelMgr As CustomPropertyManager, propertyName As String) As Boolean
 
     Dim resolvedValue As String
+    Dim wasResolved As Boolean
     
-    GetProperty = (modelMgr.Get5(propertyName, False, value, resolvedValue, False) <> _
+    GetProperty = (modelMgr.Get5(propertyName, False, value, resolvedValue, wasResolved) <> _
                    swCustomInfoGetResult_NotPresent)
 
 End Function
 
-Function GetDrawingProperty(ByRef property As String, ByRef drawing As DrawingDoc, _
-                            ByRef propertyName As String) As CustomPropertyManager
+Function GetDrawingProperty(ByRef property As String, drawing As DrawingDoc, propertyName As String) As CustomPropertyManager
 
     Set GetDrawingProperty = drawing.Extension.CustomPropertyManager("")
     If Not GetProperty(property, GetDrawingProperty, propertyName) Then
@@ -170,8 +169,7 @@ Function GetDrawingProperty(ByRef property As String, ByRef drawing As DrawingDo
 
 End Function
 
-Function GetModelProperty(ByRef property As String, ByRef model As ModelDoc2, _
-                          ByRef conf As String, ByRef propertyName As String) As CustomPropertyManager
+Function GetModelProperty(ByRef property As String, model As ModelDoc2, conf As String, propertyName As String) As CustomPropertyManager
 
     Set GetModelProperty = model.Extension.CustomPropertyManager(conf)
     If Not GetProperty(property, GetModelProperty, propertyName) Then
@@ -230,7 +228,21 @@ Function FindDefaultView(drawing As DrawingDoc) As View
     
 End Function
 
-Function GetReferencedDocument(ByRef drawing As DrawingDoc, ByRef conf As String) As ModelDoc2
+Function GetNumberChanging(drawing As DrawingDoc) As Integer
+    Dim str As String
+    
+    GetNumberChanging = 0
+    GetDrawingProperty str, drawing, pChanging
+    If IsNumeric(str) Then
+        GetNumberChanging = CInt(str)
+        If GetNumberChanging < 0 Then
+            GetNumberChanging = 0
+        End If
+    End If
+
+End Function
+
+Function GetReferencedDocument(drawing As DrawingDoc, ByRef conf As String) As ModelDoc2
 
     Dim defaultView As View
     
@@ -258,7 +270,7 @@ Sub SetProperty(ByRef mgr As CustomPropertyManager, ByRef propertyName As String
 
 End Sub
 
-Function SaveThisDoc(ByRef doc As ModelDoc2) As Boolean
+Function SaveThisDoc(doc As ModelDoc2) As Boolean
 
     Dim errors As swFileSaveError_e
     Dim warnings As swFileSaveWarning_e
@@ -273,7 +285,7 @@ Function HaveOpenedDocs(ByRef app As Object) As Boolean
 
 End Function
 
-Sub ActivateDoc(ByRef doc As ModelDoc2)
+Sub ActivateDoc(doc As ModelDoc2)
     Dim error As swActivateDocError_e
 
     swApp.ActivateDoc3 doc.GetPathName, False, swDontRebuildActiveDoc, error  ' if successfull, error = 0
@@ -328,3 +340,71 @@ Function GetDirOfActiveDoc() As String
         GetDirOfActiveDoc = gFSO.GetParentFolderName(doc.GetPathName) + "\"
     End If
 End Function
+
+Function CreateBaseDesignation(Designation As String) As String
+
+  Dim LastFullstopPosition As Integer
+  Dim FirstHyphenPosition As Integer
+  
+  CreateBaseDesignation = Designation
+  LastFullstopPosition = InStrRev(Designation, ".")
+  If LastFullstopPosition > 0 Then
+    FirstHyphenPosition = InStr(LastFullstopPosition, Designation, "-")
+    If FirstHyphenPosition > 0 Then
+      CreateBaseDesignation = Left(Designation, FirstHyphenPosition - 1)
+    End If
+  End If
+  
+End Function
+
+Sub ChangeNumberOfChanging(ByRef drawing As DrawingDoc, incChanging As Boolean, breakChanging As Boolean)
+
+    Dim number As Integer
+
+    number = GetNumberChanging(drawing)
+    If incChanging Then
+        number = number + 1
+    ElseIf breakChanging Then
+        number = 0
+    End If
+    If incChanging Or breakChanging Then
+        SetDrawingProperty drawing, pChanging, str(number)
+    End If
+
+End Sub
+
+Function GetDrawingNameWOext(drawingName As String) As String
+    GetDrawingNameWOext = Left(drawingName, Len(drawingName) - 7)
+End Function
+
+Function FormatNumberOfChanging(number As Integer) As String
+    Const revLabel = "rev"
+    
+    If number > 0 Then
+        FormatNumberOfChanging = " (" & revLabel & "." & Format(number, "00") & ")"
+    Else
+        FormatNumberOfChanging = ""
+    End If
+End Function
+
+Sub RenameDrawingViewsAndSheets(drawing As DrawingDoc)
+    Dim arraySheets As Variant
+    Dim ss As Variant
+    Dim vv As Variant
+    Dim aView As View
+    
+    arraySheets = drawing.GetViews
+    For Each ss In arraySheets
+        For Each vv In ss
+            Set aView = vv
+            TranslateView aView
+        Next
+    Next
+End Sub
+
+Function SaveDrawingAsPDF(drawing As DrawingDoc, pdfname As String, _
+                          data As IExportPdfData, ByRef abort As Boolean) As Boolean
+    SaveDrawingAsPDF = TrySaveDocAs(drawing, pdfname, data, abort)
+    RemoveMetadataFromPDF pdfname
+End Function
+

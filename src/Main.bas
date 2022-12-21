@@ -1,8 +1,13 @@
 Attribute VB_Name = "Main"
 Option Explicit
 
-Public Const macroName As String = "Save3"
-Public Const macroSection As String = "Main"
+Public Const macroName = "Save3"
+Public Const macroSection = "Main"
+Public Const pBaseDsg = "Базовое обозначение"
+Public Const pDsg = "Обозначение"
+Public Const pName = "Наименование"
+Public Const pChanging = "Изменение"
+Public Const maxPathLength = 255
 
 Enum ForAllMode
     forActive = 0
@@ -29,12 +34,12 @@ Enum LanguageMode
 End Enum
 Public TRname(1) As String
 
-Public Const maxPathLength As Integer = 255
 Public swApp As Object
 Public namesXlsNeedMode(xlsNoNeed) As String
-Private useEngNames As Boolean
-Private Const pChanging As String = "Изменение"
 Public gFSO As FileSystemObject
+
+Dim search_words(1) As String
+Dim eng_words(1) As String
 
 Sub Main()
     Set swApp = Application.SldWorks
@@ -57,64 +62,49 @@ Function InitAll()  'mask fot button
     namesExportMode(exportCurrent) = "Одну конфигурацию"
     namesExportMode(exportLiked) = "С похожим обозначением"
     
+    'Местные виды и разрезы переименовать нельзя.
+    'Они меняют название в зависимости от настроек SolidWorks.
+    search_words(0) = "лист"
+    search_words(1) = "чертежный вид"
+    
+    eng_words(0) = "Sheet"
+    eng_words(1) = "Drawing View"
+    
     Set gFSO = New FileSystemObject
     
     InitializeProperties
-
+    
 End Function
 
 Sub ConvertDocs(aForAllMode As ForAllMode)
 
    Dim doc_ As Variant
    Dim doc As ModelDoc2
-   Dim fileExtensions() As String
-   Dim mode As String
-   Dim closeAfter As Boolean
-   Dim openAfter As Boolean
-   Dim singly As Boolean
-   Dim incChanging As Boolean
-   Dim breakChanging As Boolean
    Dim abort As Boolean
-   Dim attachStep As Boolean
-   Dim xlsNeed As XlsNeedMode
-   Dim Translate As Boolean
-   Dim preview As Boolean
-   Dim Export3D As ExportMode
-   Dim oldUseEnglishLang As Boolean
-   Dim isColoredPdf As Boolean
    Dim oldIsColoredPdf As Boolean
+   Dim oldUseEnglishLang As Boolean
+   Dim user As UserInput
+   Dim docMgr As DocManager
 
    If HaveOpenedDocs(swApp) Then
-      fileExtensions = GetFileExtensions
-      mode = GetChangeMode
-      closeAfter = GetCloseAfter
-      openAfter = GetOpenAfter
-      singly = GetSingly
-      incChanging = GetIncChanging
-      breakChanging = GetBreakChanging
+      Set user = New UserInput
       abort = False
-      attachStep = GetAttachStep
-      xlsNeed = GetXlsNeed
-      Translate = GetNeedTranslate
-      preview = GetNeedPreview
-      Export3D = GetExportModel
-      useEngNames = GetEngViews(changesProperties(mode))
-      isColoredPdf = GetIsColoredPdf
-      
+
       oldIsColoredPdf = swApp.GetUserPreferenceToggle(swPDFExportInColor)
-      swApp.SetUserPreferenceToggle swPDFExportInColor, isColoredPdf
+      swApp.SetUserPreferenceToggle swPDFExportInColor, user.isColoredPdf
       
-      If useEngNames Then
+      If user.useEngNames Then
          oldUseEnglishLang = swApp.GetUserPreferenceToggle(swUseEnglishLanguageFeatureNames)
          swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, True
       End If
       
+      Set docMgr = New DocManager
+      docMgr.Init user
+      
       If aForAllMode = forAllOpened Then
          For Each doc_ In swApp.GetDocuments
             Set doc = doc_
-            TryConvertDoc doc, fileExtensions, mode, closeAfter, openAfter, singly, _
-                          incChanging, breakChanging, abort, attachStep, xlsNeed, _
-                          Translate, preview, Export3D
+            docMgr.TryConvertDoc doc, abort
             If abort Then Exit For
          Next
           
@@ -131,19 +121,17 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
          Set folder = gFSO.GetFolder(GetDirOfActiveDoc)
          For Each file_ In folder.Files
             Set file = file_
-            filename = LCase(file.Path)
+            filename = LCase(file.path)
             If InStr(filename, "slddrw") > 0 And InStr(filename, "~$") = 0 Then
                Set doc = swApp.OpenDoc6(filename, swDocDRAWING, swOpenDocOptions_Silent, "", err, wrn)
                If wrn = swFileLoadWarning_AlreadyOpen Then
-                  maybeCloseAfter = closeAfter
+                  maybeCloseAfter = user.closeAfter
                Else
                   maybeCloseAfter = True
                End If
                
                ''' job
-               TryConvertDoc doc, fileExtensions, mode, maybeCloseAfter, openAfter, singly, _
-                             incChanging, breakChanging, abort, attachStep, xlsNeed, _
-                             Translate, preview, Export3D
+               docMgr.TryConvertDoc doc, abort
                Set doc = Nothing
                If abort Then Exit For
                ''' end job
@@ -151,12 +139,10 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
          Next
           
       Else
-         TryConvertDoc swApp.ActiveDoc, fileExtensions, mode, closeAfter, openAfter, singly, _
-                       incChanging, breakChanging, abort, attachStep, xlsNeed, Translate, _
-                       preview, Export3D
+         docMgr.TryConvertDoc swApp.ActiveDoc, abort
       End If
        
-      If useEngNames Then
+      If user.useEngNames Then
          swApp.SetUserPreferenceToggle swUseEnglishLanguageFeatureNames, oldUseEnglishLang
       End If
       swApp.SetUserPreferenceToggle swPDFExportInColor, oldIsColoredPdf
@@ -168,7 +154,6 @@ Sub ConvertDocs(aForAllMode As ForAllMode)
 End Sub
 
 Function CloseNonDrawings() 'mask for button   'MAYBE to remove
-
     Dim doc_ As Variant
     Dim doc As ModelDoc2
 
@@ -178,53 +163,9 @@ Function CloseNonDrawings() 'mask for button   'MAYBE to remove
             swApp.CloseDoc doc.GetPathName
         End If
     Next
-
 End Function
 
-Sub TryConvertDoc(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode As String, _
-                  closeAfter As Boolean, openAfter As Boolean, singly As Boolean, _
-                  incChanging As Boolean, breakChanging As Boolean, ByRef abort As Boolean, _
-                  attachStep As Boolean, xlsNeed As XlsNeedMode, Translate As Boolean, _
-                  preview As Boolean, Export3D As ExportMode)
-                  
-    If Not IsDrawing(doc) Or doc.GetPathName = "" Then Exit Sub
-    ActivateDoc doc  'only the active doc converting to dxf/dwg
-    ChangeNumberOfChanging doc, incChanging, breakChanging
-    
-    'if need to translate views
-    If useEngNames Then
-        RenameDrawingViewsAndSheets doc
-    End If
-    
-    'if need then translate
-    If Translate Then
-        TryConvertDoc2 doc, fileExtensions, mode, openAfter, singly, _
-                       abort, attachStep, True, preview
-    End If
-    
-    'russian always
-    If Not abort Then
-        TryConvertDoc2 doc, fileExtensions, mode, openAfter, singly, _
-                       abort, attachStep, False, preview
-    End If
-    
-    'model copying
-    If Not abort And Export3D <> exportNone Then
-        ExportModel doc, abort, Export3D
-    End If
-    
-    'xls-specification
-    If Not abort And IsNeedXLS(doc, xlsNeed) Then
-        SaveBOMtoXLS GetBOM(doc), GetDrawingNameWOext(doc.GetPathName)
-    End If
-    
-    SaveThisDoc doc
-    If Not abort And closeAfter Then
-        swApp.QuitDoc doc.GetPathName
-    End If
-End Sub
-
-Sub TryConvertDoc2(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mode As String, _
+Sub TryConvertDoc2(doc As ModelDoc2, fileExtensions As Variant, mode As String, _
                    openAfter As Boolean, singly As Boolean, ByRef abort As Boolean, _
                    attachStep As Boolean, Translate As Boolean, preview As Boolean)
     Dim propMgrs As Dictionary
@@ -250,26 +191,9 @@ Sub TryConvertDoc2(ByRef doc As ModelDoc2, ByRef fileExtensions() As String, mod
     End If
 End Sub
 
-Sub ChangeNumberOfChanging(ByRef drawing As DrawingDoc, incChanging As Boolean, breakChanging As Boolean)
-
-    Dim number As Integer
-
-    number = GetNumberChanging(drawing)
-    If incChanging Then
-        number = number + 1
-    ElseIf breakChanging Then
-        number = 0
-    End If
-    If incChanging Or breakChanging Then
-        SetDrawingProperty drawing, pChanging, str(number)
-    End If
-
-End Sub
-
-Function MultiSaveDrawing(ByRef drawing As DrawingDoc, ByRef fileExtensions() As String, _
+Function MultiSaveDrawing(drawing As DrawingDoc, fileExtensions As Variant, _
                           openAfter As Boolean, singly As Boolean, ByRef abort As Boolean, _
                           attachStep As Boolean, Translate As Boolean) As Boolean
-
     Dim ext_ As Variant
     Dim ext As String
     
@@ -277,44 +201,14 @@ Function MultiSaveDrawing(ByRef drawing As DrawingDoc, ByRef fileExtensions() As
     If Not IsArrayEmpty(fileExtensions) Then
         For Each ext_ In fileExtensions
             ext = ext_
-            MultiSaveDrawing = MultiSaveDrawing And SaveDrawingAs(drawing, ext, openAfter, singly, abort, attachStep, Translate)
+            MultiSaveDrawing = MultiSaveDrawing And SaveDrawingAs( _
+                drawing, ext, openAfter, singly, abort, attachStep, Translate)
             If abort Then Exit For
         Next
     End If
-
 End Function
 
-Function IsNeedXLS(drawing As DrawingDoc, xlsNeed As XlsNeedMode) As Boolean
-    
-   Dim miniSign As String
-   
-   If xlsNeed = xlsNoNeed Then
-      IsNeedXLS = False
-   Else
-      GetDrawingProperty miniSign, drawing, "Пометка"
-      Select Case miniSign
-         Case "СБ", "AD", "МЧ", "ID", "РСБ", "УЧ", ".AD", ".ID"
-            IsNeedXLS = True
-         Case Else
-            If xlsNeed = xlsNeedForNew Then
-               IsNeedXLS = (GetNumberChanging(drawing) = 0)
-            Else
-               IsNeedXLS = False
-            End If
-      End Select
-   End If
-
-End Function
-
-Function SaveDrawingAsPDF(drawing As DrawingDoc, pdfname As String, _
-                          data As IExportPdfData, ByRef abort As Boolean) As Boolean
-
-  SaveDrawingAsPDF = TrySaveDocAs(drawing, pdfname, data, abort)
-  RemoveMetadataFromPDF pdfname
-  
-End Function
-
-Function SaveDrawingAs(ByRef drawing As DrawingDoc, ByRef fileExtension As String, _
+Function SaveDrawingAs(drawing As DrawingDoc, fileExtension As String, _
                        openAfter As Boolean, singly As Boolean, ByRef abort As Boolean, _
                        attachStep As Boolean, Translate As Boolean) As Boolean
 
@@ -402,8 +296,8 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
     Next
     For Each pair_ In confs.Items
         Set pair = pair_
-        GetModelProperty propSign, pair.model, pair.conf, "Обозначение"
-        GetModelProperty propName, pair.model, pair.conf, "Наименование"
+        GetModelProperty propSign, pair.model, pair.conf, pDsg
+        GetModelProperty propName, pair.model, pair.conf, pName
         stepName = propSign & " " & propName & " (" & pair.conf & ").STEP"
         pair.model.ShowConfiguration2 pair.conf
         TrySaveDocAs pair.model, stepName, Nothing, abort
@@ -414,50 +308,29 @@ Sub AttachModelToPDF(drawing As DrawingDoc, pdfname As String, ByRef abort As Bo
 End Sub
 
 Sub AttachFileToPDF(pdfname As String, attachname As String)
-
-  Dim cpdf As String
-  Dim rewrite As String
-  
-  cpdf = """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" "
-  rewrite = " -o """ & pdfname & """ """ & pdfname & """"
-  
-  CreateObject("WScript.Shell").Run cpdf & "-attach-file """ & attachname & """" & rewrite, vbHide, True
+    Dim cpdf As String
+    Dim rewrite As String
+    
+    cpdf = """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" "
+    rewrite = " -o """ & pdfname & """ """ & pdfname & """"
+    
+    CreateObject("WScript.Shell").Run cpdf & "-attach-file """ & attachname & """" & rewrite, vbHide, True
 End Sub
 
 Sub RemoveMetadataFromPDF(pdfname As String)
-  
-  Dim cpdf As String
-  Dim rewrite As String
-  
-  cpdf = """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" "
-  rewrite = " -o """ & pdfname & """ """ & pdfname & """"
-
-  CreateObject("WScript.Shell").Run cpdf & "-remove-metadata" & rewrite, vbHide, True
-  CreateObject("WScript.Shell").Run cpdf & "-set-author """"" & rewrite, vbHide, True
-  CreateObject("WScript.Shell").Run cpdf & "-set-creator """"" & rewrite, vbHide, True
-  CreateObject("WScript.Shell").Run cpdf & "-set-producer """"" & rewrite, vbHide, True
+    Dim cpdf As String
+    Dim rewrite As String
+    
+    cpdf = """" & swApp.GetCurrentMacroPathFolder & "\cpdf.exe"" "
+    rewrite = " -o """ & pdfname & """ """ & pdfname & """"
+    
+    CreateObject("WScript.Shell").Run cpdf & "-remove-metadata" & rewrite, vbHide, True
+    CreateObject("WScript.Shell").Run cpdf & "-set-author """"" & rewrite, vbHide, True
+    CreateObject("WScript.Shell").Run cpdf & "-set-creator """"" & rewrite, vbHide, True
+    CreateObject("WScript.Shell").Run cpdf & "-set-producer """"" & rewrite, vbHide, True
 End Sub
 
-Function GetDrawingNameWOext(ByRef drawingName As String) As String
-
-    GetDrawingNameWOext = Left(drawingName, Len(drawingName) - 7)
-
-End Function
-
-Function FormatNumberOfChanging(number As Integer) As String
-    Dim revLabel As String
-    'revLabel = IIf(useEngNames, "rev", "изм")
-    revLabel = "rev"
-    
-    If number > 0 Then
-        FormatNumberOfChanging = " (" & revLabel & "." & Format(number, "00") & ")"
-    Else
-        FormatNumberOfChanging = ""
-    End If
-End Function
-
-Function NewFilename(ByRef drawing As DrawingDoc, ByRef fileExtension As String, Translate As Boolean) As String
-
+Function NewFilename(drawing As DrawingDoc, fileExtension As String, Translate As Boolean) As String
     Dim drawingName As String
     Dim number As Integer
     
@@ -469,58 +342,18 @@ Function NewFilename(ByRef drawing As DrawingDoc, ByRef fileExtension As String,
                   "." & fileExtension
 End Function
 
-Function GetNumberChanging(ByRef drawing As DrawingDoc) As Integer
-    Dim str As String
-    
-    GetNumberChanging = 0
-    GetDrawingProperty str, drawing, pChanging
-    If IsNumeric(str) Then
-        GetNumberChanging = CInt(str)
-        If GetNumberChanging < 0 Then
-            GetNumberChanging = 0
-        End If
-    End If
-
-End Function
-
-Sub RenameDrawingViewsAndSheets(drawing As DrawingDoc)
-    Dim arraySheets As Variant
-    arraySheets = drawing.GetViews
-    Dim ss
-    For Each ss In arraySheets
-        Dim vv
-        For Each vv In ss
-            Dim aView As View
-            Set aView = vv
-            TranslateView aView
-        Next
-    Next
-End Sub
-
 Sub TranslateView(aView As View)
     Dim viewName As String
-    viewName = aView.GetName2
-    
-    'Местные виды и разрезы переименовать нельзя.
-    'Они меняют название в зависимости от настроек SolidWorks.
-    
-    Dim search_words(1) As String
-    search_words(0) = "лист"
-    search_words(1) = "чертежный вид"
-    
-    Dim eng_words(1) As String
-    eng_words(0) = "Sheet"
-    eng_words(1) = "Drawing View"
-    
     Dim regex As RegExp
+    Dim i As Integer
+    Dim newViewName As String
+    
+    viewName = aView.GetName2
     Set regex = New RegExp
     regex.IgnoreCase = True
-    
-    Dim i As Integer
     For i = LBound(search_words) To UBound(search_words)
         regex.Pattern = search_words(i)
         If regex.Test(viewName) Then
-            Dim newViewName As String
             newViewName = regex.Replace(viewName, eng_words(i)) & " "
             aView.SetName2 newViewName
         End If
@@ -528,8 +361,6 @@ Sub TranslateView(aView As View)
 End Sub
 
 Function ExitApp() 'mask
-
    Unload MyForm
    End
-
 End Function

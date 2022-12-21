@@ -115,8 +115,8 @@ Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
    
    sheet.Cells.NumberFormat = "@"
    
-   WriteColumnOf "Обозначение", xlsColumnDesignation, table, sheet
-   WriteColumnOf "Наименование", xlsColumnNaming, table, sheet
+   WriteColumnOf pDsg, xlsColumnDesignation, table, sheet
+   WriteColumnOf pName, xlsColumnNaming, table, sheet
    
    delta = 1
    For col = 0 To table.ColumnCount - 1
@@ -183,19 +183,19 @@ Sub FormatXLS(sheet As Excel.Worksheet)
     
     sheet.Rows(1).Font.Bold = True
     
-    Dim designation As Excel.Range
+    Dim Designation As Excel.Range
     For i = 1 To sheet.UsedRange.Columns.Count
-        Set designation = sheet.Cells(1, i)
-        designation.value = Capitalize(designation.text)
+        Set Designation = sheet.Cells(1, i)
+        Designation.value = Capitalize(Designation.text)
     Next
     For i = 1 To sheet.UsedRange.Rows.Count
-        Set designation = sheet.Cells(i, xlsColumnNaming)
+        Set Designation = sheet.Cells(i, xlsColumnNaming)
         Dim word As Variant
         For Each word In titles
-            If designation Like word Then
-                designation.Font.Bold = True
-                designation.Font.size = 16
-                designation.value = Capitalize(designation.text)
+            If Designation Like word Then
+                Designation.Font.Bold = True
+                Designation.Font.size = 16
+                Designation.value = Capitalize(Designation.text)
                 Exit For
             End If
         Next
