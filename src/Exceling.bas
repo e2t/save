@@ -5,7 +5,6 @@ Private Const xlsColumnDesignation As Integer = 1
 Private Const xlsColumnNaming As Integer = 5
 
 Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
-
     Dim swFeat As Feature
     Dim swBomFeat As BomFeature
     
@@ -19,11 +18,9 @@ Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
         End If
         Set swFeat = swFeat.GetNextFeature
     Loop
-    
 End Function
 
 Function GetColumnOf(property As String, table As TableAnnotation) As Integer
-   
    Dim i As Integer
    Dim bomTable As BomTableAnnotation
    
@@ -35,11 +32,9 @@ Function GetColumnOf(property As String, table As TableAnnotation) As Integer
          Exit Function
       End If
    Next
-
 End Function
 
 Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotation) As String
-
     Dim text As String
     
     text = table.DisplayedText(row, col)
@@ -50,11 +45,9 @@ Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotat
     End If
     text = Replace(text, vbCrLf, " ")
     GetCellText = text
-    
 End Function
 
 Sub RewriteCell(text As String, cell As Range)
-
    Dim x() As Byte
    Dim i As Variant
    Dim symbol As String
@@ -68,23 +61,19 @@ Sub RewriteCell(text As String, cell As Range)
       End If
       cell.value = cell.value + symbol
    Next
-   
 End Sub
 
 Sub RewriteColumn(colExcel As Integer, colBom As Integer, ByRef table As TableAnnotation, _
                   sheet As Excel.Worksheet, header As String)
-                  
    Dim row As Integer
    
    RewriteCell header, sheet.Cells(1, colExcel)
    For row = 1 To table.RowCount - 1
       RewriteCell GetCellText(row, colBom, table), sheet.Cells(row + 1, colExcel)
    Next
-   
 End Sub
 
 Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotation, sheet As Excel.Worksheet)
-
    Dim needRemove As Boolean
    Dim col As Integer
    
@@ -105,11 +94,9 @@ Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotatio
    If needRemove Then
       table.DeleteColumn col
    End If
-
 End Sub
 
 Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
-
    Dim col As Integer
    Dim delta As Integer
    
@@ -145,11 +132,9 @@ Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
    delta = delta + 1
    
    FormatXLS sheet
-   
 End Sub
 
 Sub FormatXLS(sheet As Excel.Worksheet)
-
     Dim i As Integer
     
     For i = 6 To sheet.UsedRange.Columns.Count - 1
@@ -203,11 +188,9 @@ Sub FormatXLS(sheet As Excel.Worksheet)
     
     sheet.Columns(xlsColumnDesignation).AutoFit
     sheet.Columns(xlsColumnNaming).AutoFit
-    
 End Sub
 
 Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
-
     Const warning As String = "Спецификация не будет создана."
     Dim xlsfile As String
     Dim xlApp As Excel.Application
@@ -241,11 +224,9 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
         Set ExcelBOM = Nothing
         Set xlApp = Nothing
     End If
-    
 End Sub
 
 Private Function AnyCase(text As String) As String
-
     Dim i As Integer, length As Integer, char As String
     
     AnyCase = ""
@@ -256,22 +237,18 @@ Private Function AnyCase(text As String) As String
             AnyCase = AnyCase + "[" + LCase(char) + UCase(char) + "]"
         Next
     End If
-    
 End Function
 
 Private Function Capitalize(text As String) As String
-
     Dim length As Integer
     Capitalize = ""
     length = Len(text)
     If length > 0 Then
         Capitalize = UCase(Left(text, 1)) + LCase(Mid(text, 2, Len(text) - 1))
     End If
-    
 End Function
 
 Private Function AddColumnToBOM(Prop As String, swTable As TableAnnotation) As Integer
-
     Dim swBom As BomTableAnnotation
     Set swBom = swTable
     
@@ -280,5 +257,4 @@ Private Function AddColumnToBOM(Prop As String, swTable As TableAnnotation) As I
         swBom.SetColumnCustomProperty swTable.ColumnCount - 1, Prop
         AddColumnToBOM = swTable.ColumnCount - 1
     End If
-    
 End Function

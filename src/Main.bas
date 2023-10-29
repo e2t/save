@@ -337,7 +337,7 @@ Function NewFilename(drawing As DrawingDoc, fileExtension As String, Translate A
     drawingName = drawing.GetPathName
     number = GetNumberChanging(drawing)
     NewFilename = GetDrawingNameWOext(drawingName) & _
-                  FormatNumberOfChanging(number) & _
+                  RevNoUnlessZero(number) & _
                   IIf(Translate, " - POLAND", "") & _
                   "." & fileExtension
 End Function

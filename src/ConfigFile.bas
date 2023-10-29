@@ -98,26 +98,6 @@ Sub CreateDefaultConfigFile(objStream As Stream)
         pFirm + vbNewLine + _
          vbNewLine
     objStream.WriteText _
-        "[ИП Дрокин]" + vbNewLine + _
-        pDevel + " Горбенко" + vbNewLine + _
-        pDraft + " Горбенко" + vbNewLine + _
-        pCheck + " Григоров" + vbNewLine + _
-        pTech + vbNewLine + _
-        pNorm + vbNewLine + _
-        pAppr + " Дрокин" + vbNewLine + _
-        pFirm + " ИП ""Дрокин""" + vbNewLine + _
-         vbNewLine
-    objStream.WriteText _
-        "[НПФ Экотон]" + vbNewLine + _
-        pDevel + " Холодов" + vbNewLine + _
-        pDraft + " Холодов" + vbNewLine + _
-        pCheck + " Вершинина" + vbNewLine + _
-        pTech + " Вершинина" + vbNewLine + _
-        pNorm + " Вершинина" + vbNewLine + _
-        pAppr + " Ватта" + vbNewLine + _
-        pFirm + " ЗАО НПФ ""Экотон""" + vbNewLine + _
-         vbNewLine
-    objStream.WriteText _
         "[Польша]" + vbNewLine + _
         pFirm + " ООО ""Эко-Инвест""" + vbNewLine + _
          vbNewLine

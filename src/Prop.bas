@@ -15,9 +15,9 @@ Public Const pAppr = "Утвердил"
 Public Const pFirm = "Организация"
 
 Function InitializeProperties()  'mask for button
-    
     'properties of model
     modelProperties(0) = pDevel
+    
     'properties of drawing
     drawingProperties(0) = pDraft
     drawingProperties(1) = pCheck
@@ -30,12 +30,10 @@ Function InitializeProperties()  'mask for button
     Set changesProperties = New Dictionary
     changesProperties.Add "Без изменений", New Dictionary
     GetRowsFromFile
-
 End Function
 
 Sub ReserveAllProperties(ByRef propMgrs As Dictionary, ByRef values As Dictionary, _
                          ByRef drawing As DrawingDoc)
-
     Dim propName_ As Variant
     Dim propName As String
     Dim model As ModelDoc2
@@ -64,23 +62,17 @@ Sub ReserveAllProperties(ByRef propMgrs As Dictionary, ByRef values As Dictionar
             End If
         Next
     End If
-
 End Sub
 
 Sub ChangeAllProperties(ByRef mgrs As Dictionary, mode As String)
-    
     ChangePropertiesBy mgrs, changesProperties(mode)
-
 End Sub
 
 Sub RestoreAllProperties(ByRef mgrs As Dictionary, ByRef values As Dictionary)
-
     ChangePropertiesBy mgrs, values
-    
 End Sub
 
 Sub ChangePropertiesBy(ByRef mgrs As Dictionary, ByRef changes As Dictionary)
-
     Dim propName_ As Variant
     Dim propName As String
 
@@ -92,5 +84,4 @@ Sub ChangePropertiesBy(ByRef mgrs As Dictionary, ByRef changes As Dictionary)
         End If
 NextFor:
     Next
-
 End Sub

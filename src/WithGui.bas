@@ -72,9 +72,9 @@ Sub SetIncBoxCaption(mode As IncBoxMode)
     text = IIf(MyForm.IsForAll, "Измененные чертежи", "Измененный чертеж")
     Select Case mode
         Case ShowThisNumber
-            text = text & FormatNumberOfChanging(GetNumberChangingOfThisDoc)
+            text = text & RevNoUnlessZero(GetNumberChangingOfThisDoc)
         Case ShowNextNumber
-            text = text & FormatNumberOfChanging(GetNumberChangingOfThisDoc + 1)
+            text = text & RevNoUnlessZero(GetNumberChangingOfThisDoc + 1)
         Case ShowAdding
             text = text & " (+1)"
     End Select

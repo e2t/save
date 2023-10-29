@@ -2,7 +2,6 @@ Attribute VB_Name = "Translit"
 Option Explicit
 
 Function Transliteration(ByVal a As String) As String
-    
     a = Replace(a, "à", "a")
     a = Replace(a, "á", "b")
     a = Replace(a, "â", "v")
