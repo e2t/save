@@ -47,7 +47,8 @@ Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotat
     GetCellText = text
 End Function
 
-Sub RewriteCell(text As String, cell As Range)
+Sub RewriteCell(text As String, _
+                cell As Object) 'Range
    Dim x() As Byte
    Dim i As Variant
    Dim symbol As String
@@ -63,8 +64,9 @@ Sub RewriteCell(text As String, cell As Range)
    Next
 End Sub
 
+'@sheet is Excel.Worksheet
 Sub RewriteColumn(colExcel As Integer, colBom As Integer, ByRef table As TableAnnotation, _
-                  sheet As Excel.Worksheet, header As String)
+                  sheet As Object, header As String)
    Dim row As Integer
    
    RewriteCell header, sheet.Cells(1, colExcel)
@@ -73,7 +75,8 @@ Sub RewriteColumn(colExcel As Integer, colBom As Integer, ByRef table As TableAn
    Next
 End Sub
 
-Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotation, sheet As Excel.Worksheet)
+'@sheet is Excel.Worksheet
+Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotation, sheet As Object)
    Dim needRemove As Boolean
    Dim col As Integer
    
@@ -96,7 +99,8 @@ Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotatio
    End If
 End Sub
 
-Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
+'@sheet is Excel.Worksheet
+Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Object)
    Dim col As Integer
    Dim delta As Integer
    
@@ -134,7 +138,8 @@ Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Excel.Worksheet)
    FormatXLS sheet
 End Sub
 
-Sub FormatXLS(sheet As Excel.Worksheet)
+'@sheet is Excel.Worksheet
+Sub FormatXLS(sheet As Object)
     Dim i As Integer
     
     For i = 6 To sheet.UsedRange.Columns.Count - 1
@@ -168,7 +173,7 @@ Sub FormatXLS(sheet As Excel.Worksheet)
     
     sheet.Rows(1).Font.Bold = True
     
-    Dim Designation As Excel.Range
+    Dim Designation As Object 'Excel.Range
     For i = 1 To sheet.UsedRange.Columns.Count
         Set Designation = sheet.Cells(1, i)
         Designation.value = Capitalize(Designation.text)
@@ -193,8 +198,8 @@ End Sub
 Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
     Const warning As String = "Спецификация не будет создана."
     Dim xlsfile As String
-    Dim xlApp As Excel.Application
-    Dim ExcelBOM As Excel.Workbook
+    Dim xlApp As Object 'Excel.Application
+    Dim ExcelBOM As Object 'Excel.Workbook
     Dim countFilenameChars As Integer
 
     If Not swTable Is Nothing Then
@@ -213,7 +218,7 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
         End If
         
         'Open Excel
-        Set xlApp = New Excel.Application
+        Set xlApp = CreateObject("Excel.Application")
         Set ExcelBOM = xlApp.Workbooks.Add
         ImportBOMtoXLS swTable, ExcelBOM.Worksheets(1)
         

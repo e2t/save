@@ -3,6 +3,12 @@
 [//]: # (YYYY-MM-DD)
 [//]: # (Added, Changed, Deprecated, Removed, Fixed, Security)
 
+## [23.1.1] 2023-11-01
+
+### Fixed
+
+- Тепер макрос не залежить від версії Excel.
+
 ## [23.1] 2023-10-29
 
 ### Changed
