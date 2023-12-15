@@ -6,6 +6,10 @@ Public Const macroSection = "Main"
 Public Const pBaseDsg = "Базовое обозначение"
 Public Const pDsg = "Обозначение"
 Public Const pName = "Наименование"
+Public Const pNameEN = "Наименование EN"
+Public Const pNamePL = "Наименование PL"
+Public Const pNameUA = "Наименование UA"
+Public Const pNameLT = "Наименование LT"
 Public Const pChanging = "Изменение"
 Public Const maxPathLength = 255
 
@@ -37,6 +41,7 @@ Public TRname(1) As String
 Public swApp As Object
 Public namesXlsNeedMode(xlsNoNeed) As String
 Public gFSO As FileSystemObject
+Public pAllNames(4) As String
 
 Dim search_words(1) As String
 Dim eng_words(1) As String
@@ -69,6 +74,12 @@ Function InitAll()  'mask fot button
     
     eng_words(0) = "Sheet"
     eng_words(1) = "Drawing View"
+    
+    pAllNames(0) = pName
+    pAllNames(1) = pNameEN
+    pAllNames(2) = pNamePL
+    pAllNames(3) = pNameUA
+    pAllNames(4) = pNameLT
     
     Set gFSO = New FileSystemObject
     
@@ -221,7 +232,7 @@ Function SaveDrawingAs(drawing As DrawingDoc, fileExtension As String, _
     Dim pdfname_ As Variant
     Dim pdfname As String
     Dim isPdf As Boolean
-    Dim i As Integer
+    Dim I As Integer
     
     SaveDrawingAs = True
     isPdf = (fileExtension = "PDF")
@@ -229,7 +240,7 @@ Function SaveDrawingAs(drawing As DrawingDoc, fileExtension As String, _
     If isPdf Then
         Set data = swApp.GetExportFileData(1)
         ReDim pdfnames(drawing.GetSheetCount - 1)
-        i = 0
+        I = 0
         If singly And drawing.GetSheetCount > 1 Then  'по отдельным листам
             For Each sheetname_ In drawing.GetSheetNames
                 sheetname = sheetname_
@@ -237,8 +248,8 @@ Function SaveDrawingAs(drawing As DrawingDoc, fileExtension As String, _
                 data.SetSheets swExportData_ExportSpecifiedSheets, specifiedSheet
                 SaveDrawingAs = SaveDrawingAs And _
                                 SaveDrawingAsPDF(drawing, InsertSheetName(filename, sheetname), data, abort)
-                pdfnames(i) = InsertSheetName(filename, sheetname)
-                i = i + 1
+                pdfnames(I) = InsertSheetName(filename, sheetname)
+                I = I + 1
                 If abort Then Exit For
             Next
         Else
@@ -345,16 +356,16 @@ End Function
 Sub TranslateView(aView As View)
     Dim viewName As String
     Dim regex As RegExp
-    Dim i As Integer
+    Dim I As Integer
     Dim newViewName As String
     
     viewName = aView.GetName2
     Set regex = New RegExp
     regex.IgnoreCase = True
-    For i = LBound(search_words) To UBound(search_words)
-        regex.Pattern = search_words(i)
+    For I = LBound(search_words) To UBound(search_words)
+        regex.Pattern = search_words(I)
         If regex.Test(viewName) Then
-            newViewName = regex.Replace(viewName, eng_words(i)) & " "
+            newViewName = regex.Replace(viewName, eng_words(I)) & " "
             aView.SetName2 newViewName
         End If
     Next

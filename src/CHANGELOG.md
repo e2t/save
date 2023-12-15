@@ -3,6 +3,12 @@
 [//]: # (YYYY-MM-DD)
 [//]: # (Added, Changed, Deprecated, Removed, Fixed, Security)
 
+## [23.2] 2023-12-15
+
+### Changed
+
+- Тепер в XLS-файлі колонка Найменування така ж сама, як на кресленні.
+
 ## [23.1.1] 2023-11-01
 
 ### Fixed

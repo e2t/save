@@ -21,23 +21,23 @@ Function GetBOM(ByRef doc As ModelDoc2) As TableAnnotation
 End Function
 
 Function GetColumnOf(property As String, table As TableAnnotation) As Integer
-   Dim i As Integer
+   Dim I As Integer
    Dim bomTable As BomTableAnnotation
    
    GetColumnOf = -1
    Set bomTable = table
-   For i = 0 To table.ColumnCount - 1
-      If StrComp(bomTable.GetColumnCustomProperty(i), property, vbTextCompare) = 0 Then
-         GetColumnOf = i
+   For I = 0 To table.ColumnCount - 1
+      If StrComp(bomTable.GetColumnCustomProperty(I), property, vbTextCompare) = 0 Then
+         GetColumnOf = I
          Exit Function
       End If
    Next
 End Function
 
-Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotation) As String
+Function GetCellText(Row As Integer, Col As Integer, ByRef table As TableAnnotation) As String
     Dim text As String
     
-    text = table.DisplayedText(row, col)
+    text = table.DisplayedText(Row, Col)
     If text Like "<*>*" Then
         Dim ary() As String
         ary = Split(text, ">")
@@ -48,43 +48,43 @@ Function GetCellText(row As Integer, col As Integer, ByRef table As TableAnnotat
 End Function
 
 Sub RewriteCell(text As String, _
-                cell As Object) 'Range
+                Cell As Object) 'Range
    Dim x() As Byte
-   Dim i As Variant
+   Dim I As Variant
    Dim symbol As String
    
    x = StrConv(text, vbFromUnicode)
-   For Each i In x
-      If i < 256 Then
-         symbol = Chr(i)
+   For Each I In x
+      If I < 256 Then
+         symbol = Chr(I)
       Else
-         symbol = ChrW(i) 'для польских символов
+         symbol = ChrW(I) 'для польских символов
       End If
-      cell.value = cell.value + symbol
+      Cell.value = Cell.value + symbol
    Next
 End Sub
 
 '@sheet is Excel.Worksheet
 Sub RewriteColumn(colExcel As Integer, colBom As Integer, ByRef table As TableAnnotation, _
                   sheet As Object, header As String)
-   Dim row As Integer
+   Dim Row As Integer
    
    RewriteCell header, sheet.Cells(1, colExcel)
-   For row = 1 To table.RowCount - 1
-      RewriteCell GetCellText(row, colBom, table), sheet.Cells(row + 1, colExcel)
+   For Row = 1 To table.RowCount - 1
+      RewriteCell GetCellText(Row, colBom, table), sheet.Cells(Row + 1, colExcel)
    Next
 End Sub
 
 '@sheet is Excel.Worksheet
 Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotation, sheet As Object)
    Dim needRemove As Boolean
-   Dim col As Integer
+   Dim Col As Integer
    
    needRemove = False
-   col = GetColumnOf(property, table)
-   If col < 0 Then
-      col = AddColumnToBOM(property, table)
-      If col < 0 Then
+   Col = GetColumnOf(property, table)
+   If Col < 0 Then
+      Col = AddColumnToBOM(property, table)
+      If Col < 0 Then
          If MsgBox("Невозможно добавить столбец """ & property & """.", vbOKCancel) = vbCancel Then
             ExitApp
          Else
@@ -93,26 +93,46 @@ Sub WriteColumnOf(property As String, xlsCol As Integer, table As TableAnnotatio
       End If
       needRemove = True
    End If
-   RewriteColumn xlsCol, col, table, sheet, property
+   RewriteColumn xlsCol, Col, table, sheet, property
    If needRemove Then
-      table.DeleteColumn col
+      table.DeleteColumn Col
    End If
 End Sub
 
+Function DefineNameProperty(table As TableAnnotation) As String
+    Dim Prop As String
+    Dim name As Variant
+    Dim I As Integer
+    Dim Bom As BomTableAnnotation
+    
+    DefineNameProperty = pName
+    Set Bom = table
+    For I = 0 To table.ColumnCount
+        For Each name In pAllNames
+            Prop = Bom.GetColumnCustomProperty(I)
+            If StrComp(Prop, name, vbTextCompare) = 0 Then
+                DefineNameProperty = Prop
+                GoTo EndFunction
+            End If
+        Next
+    Next
+EndFunction:
+End Function
+
 '@sheet is Excel.Worksheet
 Sub ImportBOMtoXLS(ByRef table As TableAnnotation, sheet As Object)
-   Dim col As Integer
+   Dim Col As Integer
    Dim delta As Integer
    
    sheet.Cells.NumberFormat = "@"
    
    WriteColumnOf pDsg, xlsColumnDesignation, table, sheet
-   WriteColumnOf pName, xlsColumnNaming, table, sheet
+   WriteColumnOf DefineNameProperty(table), xlsColumnNaming, table, sheet
    
    delta = 1
-   For col = 0 To table.ColumnCount - 1
-      If table.GetColumnType(col) = swBomTableColumnType_Quantity Then
-         RewriteColumn xlsColumnNaming + delta, col, table, sheet, GetCellText(0, col, table)
+   For Col = 0 To table.ColumnCount - 1
+      If table.GetColumnType(Col) = swBomTableColumnType_Quantity Then
+         RewriteColumn xlsColumnNaming + delta, Col, table, sheet, GetCellText(0, Col, table)
          delta = delta + 1
       End If
    Next
@@ -140,60 +160,63 @@ End Sub
 
 '@sheet is Excel.Worksheet
 Sub FormatXLS(sheet As Object)
-    Dim i As Integer
+    Dim I As Integer
+    Dim NameCell As Object 'Excel.Range
     
-    For i = 6 To sheet.UsedRange.Columns.Count - 1
-        If Not IsError(sheet.Cells(1, i)) Then
-            If Len(sheet.Cells(1, i)) = 1 Then
-                If sheet.Cells(1, i) = " " Then
-                    sheet.Cells(1, i).value = "00"
+    For I = 6 To sheet.UsedRange.Columns.Count - 1
+        If Not IsError(sheet.Cells(1, I)) Then
+            If Len(sheet.Cells(1, I)) = 1 Then
+                If sheet.Cells(1, I) = " " Then
+                    sheet.Cells(1, I).value = "00"
                 Else
-                    sheet.Cells(1, i).value = "0" + sheet.Cells(1, i).text
+                    sheet.Cells(1, I).value = "0" + sheet.Cells(1, I).text
                 End If
             End If
         End If
     Next
-    sheet.name = "List-0"  'constant, agreed with Ivanyna
-    
-    Dim titles(13) As String
-    titles(0) = "*" + AnyCase("документация")
-    titles(1) = "*" + AnyCase("комплек") + "[сСтТ]" + AnyCase("ы")
-    titles(2) = "*" + AnyCase("сборочные единицы")
-    titles(3) = "*" + AnyCase("детали")
-    titles(4) = "*" + AnyCase("стандартные изделия")
-    titles(5) = "*" + AnyCase("проч") + "[иИеЕ]" + AnyCase("е") + "*"
-    titles(6) = "*" + AnyCase("материалы")
-    titles(7) = "*" + AnyCase("покупные") + "*"
-    titles(8) = "*" + AnyCase("assembly units")
-    titles(9) = "*" + AnyCase("details")
-    titles(10) = "*" + AnyCase("standard products")
-    titles(11) = "*" + AnyCase("third party products")
-    titles(12) = "*" + AnyCase("materials")
-    titles(13) = "*" + AnyCase("other")
-    
-    sheet.Rows(1).Font.Bold = True
-    
-    Dim Designation As Object 'Excel.Range
-    For i = 1 To sheet.UsedRange.Columns.Count
-        Set Designation = sheet.Cells(1, i)
-        Designation.value = Capitalize(Designation.text)
-    Next
-    For i = 1 To sheet.UsedRange.Rows.Count
-        Set Designation = sheet.Cells(i, xlsColumnNaming)
-        Dim word As Variant
-        For Each word In titles
-            If Designation Like word Then
-                Designation.Font.Bold = True
-                Designation.Font.size = 16
-                Designation.value = Capitalize(Designation.text)
-                Exit For
-            End If
-        Next
+    sheet.name = "List-0" 'constant, agreed with Ivanyna
+   
+    sheet.Rows(1).Font.Bold = True 'headers
+        
+    For I = 2 To sheet.UsedRange.Rows.Count
+        Set NameCell = sheet.Cells(I, xlsColumnNaming)
+        If IsGroupRow(sheet, I) Then
+            NameCell.Font.Bold = True
+            NameCell.Font.size = 16
+        End If
     Next
     
     sheet.Columns(xlsColumnDesignation).AutoFit
     sheet.Columns(xlsColumnNaming).AutoFit
 End Sub
+
+'@sheet is Excel.Worksheet
+Function IsGroupRow(sheet As Object, Row As Integer) As Boolean
+    Dim I As Integer
+
+    IsGroupRow = True
+    For I = xlsColumnNaming + 1 To sheet.UsedRange.Columns.Count
+        If Not IsCellEmpty(sheet, Row, I) Then
+            IsGroupRow = False
+            GoTo EndFunction
+        End If
+    Next
+    For I = 1 To xlsColumnNaming - 1
+        If Not IsCellEmpty(sheet, Row, I) Then
+            IsGroupRow = False
+            GoTo EndFunction
+        End If
+    Next
+EndFunction:
+End Function
+
+'@sheet is Excel.Worksheet
+Function IsCellEmpty(sheet As Object, Row As Integer, Col As Integer)
+    Dim Cell As Object 'Excel.Range
+    
+    Set Cell = sheet.Cells(Row, Col)
+    IsCellEmpty = (Trim(Cell) = "")
+End Function
 
 Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
     Const warning As String = "Спецификация не будет создана."
@@ -206,14 +229,12 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
         xlsfile = fullFileNameNoExt + ".xls"
         countFilenameChars = Len(xlsfile)
         If countFilenameChars > maxPathLength Then
-            MsgBox "Слишком длинное имя файла (" & str(countFilenameChars) & " > " & str(maxPathLength) & "):" & vbNewLine & _
-                   xlsfile & vbNewLine & _
-                   warning, vbCritical
+            MsgBox "Слишком длинное имя файла (" & str(countFilenameChars) & " > " & str(maxPathLength) & "):" _
+                & vbNewLine & xlsfile & vbNewLine & warning, vbCritical
         End If
         If Not RemoveOldFile(xlsfile) Then
             MsgBox "Не удается удалить старый файл:" & vbNewLine & _
-                   xlsfile & vbNewLine & _
-                   warning, vbCritical
+                xlsfile & vbNewLine & warning, vbCritical
             Exit Sub
         End If
         
@@ -232,24 +253,15 @@ Sub SaveBOMtoXLS(ByRef swTable As TableAnnotation, fullFileNameNoExt As String)
 End Sub
 
 Private Function AnyCase(text As String) As String
-    Dim i As Integer, length As Integer, char As String
+    Dim I As Integer, Length As Integer, char As String
     
     AnyCase = ""
-    length = Len(text)
-    If length > 0 Then
-        For i = 1 To length
-            char = Mid(text, i, 1)
+    Length = Len(text)
+    If Length > 0 Then
+        For I = 1 To Length
+            char = Mid(text, I, 1)
             AnyCase = AnyCase + "[" + LCase(char) + UCase(char) + "]"
         Next
-    End If
-End Function
-
-Private Function Capitalize(text As String) As String
-    Dim length As Integer
-    Capitalize = ""
-    length = Len(text)
-    If length > 0 Then
-        Capitalize = UCase(Left(text, 1)) + LCase(Mid(text, 2, Len(text) - 1))
     End If
 End Function
 
