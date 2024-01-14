@@ -1,4 +1,6 @@
-﻿# Save
+This project has been moved to https://codeberg.org/e2t/save
+ 
+ # Save
 Макрос для збереження креслень SolidWorks у різні формати. Є можливість пакетного збереження всіх відкритих креслень.
 
 ## Requirements
